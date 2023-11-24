@@ -57,7 +57,7 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
     k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
-    N_values = [40]
+    N_values = [40, 50, 60, 70]
 
     # Verificando se já existem targets no arquivo
     if len(targets) < len(img_paths):
@@ -146,23 +146,23 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
 
 def extract_features_with_resource_check(CN, img_path):
     while not check_system_resources():
-        print("Aguardando recursos suficientes...")
+        print("\r\033[KAguardando recursos suficientes...", end="")
         time.sleep(5)
 
     return CN.extract_features(cv2.imread(img_path, cv2.IMREAD_GRAYSCALE))
 
-def fisher_vectors_with_resource_check(CN, img_path):
+def fisher_vectors_with_resource_check(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering):
     while not check_system_resources():
-        print("Aguardando recursos suficientes...")
+        print("\r\033[KAguardando recursos suficientes...", end="")
         time.sleep(5)
 
-    return compute_fisher_vectors
+    return compute_fisher_vectors(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering)
 
 def compute_fisher_vectors(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering):
     """
     Computa os Fisher Vectors e retorna o resultado.
     """
-    print(f"Calculando Fisher Vectors para d={d_ctrl}, f={f_ctrl}, c={c_ctrl}, k={k}, N={N}...")
+    print(f"\r\033[KCalculando Fisher Vectors para d={d_ctrl}, f={f_ctrl}, c={c_ctrl}, k={k}, N={N}...", end="")
 
     # Combinar as características de acordo com os parâmetros de controle
     CNFeatures = combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering)
