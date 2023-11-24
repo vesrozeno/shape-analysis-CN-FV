@@ -6,5 +6,5 @@ tqdm
 scipy
 scikit-image
 pandas
-shutil
+pytest-shutil
 psutil

@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Script para classificar Vetores de Fisher usando SVM e LDA com gerenciamento de recursos.
-
-Criado em: 21 Março 2024
-Autores: Lucas C. Ribas e Vitor Emanuel S. Rozeno
-"""
-
 import pickle
 from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import LinearSVC
@@ -21,8 +11,8 @@ import psutil
 import time
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_teste.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
-results_csv = "results/results_teste4.csv"  # Arquivo CSV para salvar os resultados
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_eth.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+results_csv = "results/results_eth.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = -1  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
 cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
@@ -65,7 +55,7 @@ def main():
     print(f"Length of targets: {len(targets)}")
 
     # Executar a classificação para cada combinação de parâmetros sem barra de progresso
-    Parallel(n_jobs=n_jobs)(
+    Parallel(n_jobs=get_adjusted_n_jobs())(
         delayed(process_combination)(params, fisher_vectors, targets, processed_combinations) 
         for params, fisher_vectors in fisher_vectors_dict.items()
     )
@@ -182,6 +172,17 @@ def check_system_resources():
     if memory_used_mb > memory_limit_mb or cpu_percent > cpu_limit_percent:
         return False
     return True
+
+def get_adjusted_n_jobs():
+    """
+    Ajusta o número de jobs (núcleos) usados com base no uso atual da CPU.
+    Se o uso da CPU estiver perto do limite, reduz o número de jobs.
+    """
+    cpu_percent = psutil.cpu_percent(interval=1)
+    
+    if cpu_percent > cpu_limit_percent:
+        return max(1, n_jobs // 2)  # Reduz para metade ou 1 job se estiver perto do limite
+    return n_jobs
 
 if __name__ == "__main__":
     main()
