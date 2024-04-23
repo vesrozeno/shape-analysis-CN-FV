@@ -23,7 +23,7 @@ from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Caminho do diretório contendo as imagens
-image_directory = "../datasets/Leaves256x256c/"
+image_directory = "datasets/Leaves256x256c/"
 pattern = image_directory + "*.png"
 
 # Encontrando todos os caminhos de imagem que correspondem ao padrão
@@ -36,8 +36,8 @@ clustering = []
 targets = []
 
 # Definindo medidas da RC
-d_ctrl = 1
-f_ctrl = 0
+d_ctrl = 0
+f_ctrl = 1
 c_ctrl = 1
 
 # Número de componentes para o modelo GMM
@@ -170,7 +170,7 @@ print(
 
 
 #  Salvar os resultados em um arquivo CSV
-with open("results.csv", mode="a") as csvfile:
+with open("codes/results.csv", mode="a") as csvfile:
     fieldnames = [
         "d",
         "f",
