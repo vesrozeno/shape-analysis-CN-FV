@@ -37,17 +37,17 @@ targets = []
 
 # Definindo medidas da RC
 d_ctrl = 1
-f_ctrl = 1
+f_ctrl = 0
 c_ctrl = 1
 
 # Número de componentes para o modelo GMM
-k = 6
+k = 20
 
 # Valores de limiar para extração de características
 # thresholding = np.linspace(0.025, 0.95, num=10)
 
 # Definindo o valor de N
-N = 20
+N = 10
 
 # Calculando o incremento
 inc = 1 / N
