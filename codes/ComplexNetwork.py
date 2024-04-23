@@ -1,25 +1,30 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 
+
 class ComplexNetwork:
     def __init__(self, thresholding):
         """
         Inicializa a classe CNDescriptorsClass com uma imagem e valores de thresholding.
-        
+
         :param img: Imagem binária da qual características são extraídas (contorno branco, fundo preto).
         :param thresholding: Valores de thresholding para a extração de características.
         """
         self.thresholding = thresholding
 
-    def extract_features(self,img):
+    def extract_features(self, img):
         """
         Extrai características da imagem.
 
         :return: Tupla de grade, força e coeficiente de clustering.
         """
-        coord = np.argwhere(img > 0)  # Encontra coordenadas dos pixels não-zero (brancos) na imagem.
+        coord = np.argwhere(
+            img > 0
+        )  # Encontra coordenadas dos pixels não-zero (brancos) na imagem.
         cn = self._cn_make(coord)  # Modelagem de rede.
-        grade, force, cc = self._thresholding_cn(cn, self.thresholding)  # CN evoluindo com a seleção de thresholding.
+        grade, force, cc = self._thresholding_cn(
+            cn, self.thresholding
+        )  # CN evoluindo com a seleção de thresholding.
 
         # Normalização de grade e força.
         grade = grade / grade.shape[1]
@@ -35,7 +40,7 @@ class ComplexNetwork:
         :param coord: Coordenadas dos pixels não-zero na imagem.
         :return: Rede complexa CN.
         """
-        y = pdist(coord, 'euclidean')  # Calcula distâncias Euclidianas par a par.
+        y = pdist(coord, "euclidean")  # Calcula distâncias Euclidianas par a par.
         CN = squareform(y)
         CN = CN / np.max(CN)  # Normaliza.
 
@@ -65,7 +70,6 @@ class ComplexNetwork:
 
         return np.array(grade), np.array(force), np.array(cc)
 
-
     ## REVISAR E VERIFICAR SE O CÁCULO ESTÁ CORRETO!!!!
     def _coeficiente_clustering(self, A):
         """
@@ -83,7 +87,7 @@ class ComplexNetwork:
         possiveis_conexoes = graus * (graus - 1) / 2
         C = np.zeros(n)  # Inicializa o coeficiente de clustering para cada nó.
 
-        with np.errstate(divide='ignore', invalid='ignore'):
+        with np.errstate(divide="ignore", invalid="ignore"):
             C = diagonais_cubo / possiveis_conexoes
             C[np.isnan(C)] = 0  # Substitui NaN por 0.
 

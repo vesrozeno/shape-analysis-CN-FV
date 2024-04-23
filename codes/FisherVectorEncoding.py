@@ -6,17 +6,12 @@ Created on Thu Mar 21 23:26:12 2024
 @author: lucas
 """
 
-
 import numpy as np
 from skimage.feature import fisher_vector, learn_gmm
 
 
 class FisherVectorEncoding:
-    '''
 
-    ALTERAR N_MODES AQUI
-
-    '''
     def __init__(self, n_modes):
         """
         Inicializa a classe ImageClassifier.
@@ -34,7 +29,6 @@ class FisherVectorEncoding:
         """
         self.gmm = learn_gmm(descriptors, n_modes=self.n_modes)
 
-
     def compute_fisher_vectors_unique(self, descriptors):
         """
         Calcula os vetores de Fisher para os descritores fornecidos.
@@ -44,9 +38,9 @@ class FisherVectorEncoding:
         """
         if self.gmm is None:
             raise ValueError("GMM has not been trained. Call 'learn_gmm' first.")
-        return np.array([fisher_vector(descriptor, self.gmm) for descriptor in descriptors])
-    
-    
+        return np.array(
+            [fisher_vector(descriptor, self.gmm) for descriptor in descriptors]
+        )
 
     def compute_fisher_vectors(self, train_descriptors, test_descriptors):
         """
