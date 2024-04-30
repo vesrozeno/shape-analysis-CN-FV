@@ -24,6 +24,7 @@ from FisherVectorEncoding import FisherVectorEncoding
 
 # Caminho do diretório contendo as imagens
 image_directory = "datasets/Leaves256x256c/"
+# image_directory = "datasets/teste/"
 pattern = image_directory + "*.png"
 
 # Encontrando todos os caminhos de imagem que correspondem ao padrão
@@ -37,17 +38,17 @@ targets = []
 
 # Definindo medidas da RC
 d_ctrl = 0
-f_ctrl = 1
+f_ctrl = 0
 c_ctrl = 1
 
 # Número de componentes para o modelo GMM
-k = 20
+k = 4
 
 # Valores de limiar para extração de características
 # thresholding = np.linspace(0.025, 0.95, num=10)
 
 # Definindo o valor de N
-N = 10
+N = 30
 
 # Calculando o incremento
 inc = 1 / N

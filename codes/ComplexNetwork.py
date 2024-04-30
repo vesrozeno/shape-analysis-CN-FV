@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
+import networkx as nx
+# import matplotlib.pyplot as plt
 
 
 class ComplexNetwork:
@@ -29,7 +31,7 @@ class ComplexNetwork:
         # Normalização de grade e força.
         grade = grade / grade.shape[1]
         force = force / force.shape[1]
-        cc = cc / cc.shape[1]
+        #cc = cc / cc.shape[1]
 
         return grade, force, cc
 
@@ -66,29 +68,37 @@ class ComplexNetwork:
             cnW[c] = cn[c]
             grade.append(np.sum(cnU, axis=0) - 1)
             force.append(np.sum(cnW, axis=0))
-            cc.append(self._coeficiente_clustering(cnU))
-
+            # cc.append(self._coeficiente_clustering(cnU))
+            cc.append(self._clustering(cnU))
+        
         return np.array(grade), np.array(force), np.array(cc)
 
     ## REVISAR E VERIFICAR SE O CÁCULO ESTÁ CORRETO!!!!
-    def _coeficiente_clustering(self, A):
-        """
-        Calcula o coeficiente de clustering para cada nó da rede.
 
-        :param A: Matriz de adjacência da rede.
-        :return: Coeficiente de clustering.
-        """
-        n = A.shape[0]  # Número de nós.
-        A_quadrado = np.dot(A, A)
-        A_cubo = np.dot(A_quadrado, A)
-        diagonais_cubo = np.diag(A_cubo) / 2
 
-        graus = A.sum(axis=1)  # Grau de cada nó.
-        possiveis_conexoes = graus * (graus - 1) / 2
-        C = np.zeros(n)  # Inicializa o coeficiente de clustering para cada nó.
+#     def _coeficiente_clustering(self, A):
+#         """
+#         Calcula o coeficiente de clustering para cada nó da rede.
 
-        with np.errstate(divide="ignore", invalid="ignore"):
-            C = diagonais_cubo / possiveis_conexoes
-            C[np.isnan(C)] = 0  # Substitui NaN por 0.
+#         :param A: Matriz de adjacência da rede.
+#         :return: Coeficiente de clustering.
+#         """
+#         n = A.shape[0]  # Número de nós.
+#         A_quadrado = np.dot(A, A)
+#         A_cubo = np.dot(A_quadrado, A)
+#         diagonais_cubo = np.diag(A_cubo) / 2
 
+#         graus = A.sum(axis=1)  # Grau de cada nó.
+#         possiveis_conexoes = graus * (graus - 1) / 2
+#         C = np.zeros(n)  # Inicializa o coeficiente de clustering para cada nó.
+
+#         with np.errstate(divide="ignore", invalid="ignore"):
+#             C = diagonais_cubo / possiveis_conexoes
+#             C[np.isnan(C)] = 0  # Substitui NaN por 0.
+
+#         return C
+# # igraph, networkx
+    def _clustering(self, A):
+        G = nx.Graph(A)
+        C = nx.clustering(G)
         return C
