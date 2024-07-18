@@ -3,10 +3,10 @@
 
 """
 Script para extrair características de imagens usando Redes Complexas e Vetores de Fisher,
-seguido de classificação com SVM.
+seguido de classificação com SVM e LDA.
 
 Criado em: 21 Março 2024
-Autor: lucas
+Autor: Lucas
 """
 
 # Importações necessárias
@@ -22,180 +22,218 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
-# Caminho do diretório contendo as imagens
-image_directory = "datasets/Leaves256x256c/"
-# image_directory = "datasets/teste/"
-pattern = image_directory + "*.png"
 
-# Encontrando todos os caminhos de imagem que correspondem ao padrão
-img_paths = glob.glob(pattern)
+# Função principal
+def main():
+    # Caminho do diretório contendo as imagens
+    image_directory = "datasets/Leaves256x256c/"
+    pattern = image_directory + "*.png"
 
-# Inicializando listas para armazenar os descritores e rótulos das imagens
-degrees = []
-forces = []
-clustering = []
-targets = []
+    # Encontrando todos os caminhos de imagem que correspondem ao padrão
+    img_paths = glob.glob(pattern)
 
-# Definindo medidas da RC
-d_ctrl = 0
-f_ctrl = 0
-c_ctrl = 1
+    # Definindo as possíveis combinações de parâmetros
+    d_ctrl_values = [0, 1]
+    f_ctrl_values = [0, 1]
+    c_ctrl_values = [0, 1]
+    k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20]
+    N_values = [10, 20, 25, 30, 35, 40, 45, 50]
 
-# Número de componentes para o modelo GMM
-k = 4
+    # Loop sobre todas as combinações de parâmetros
+    for d_ctrl in d_ctrl_values:
+        for f_ctrl in f_ctrl_values:
+            for c_ctrl in c_ctrl_values:
+                if d_ctrl == 0 and f_ctrl == 0 and c_ctrl == 0:
+                    continue  # Pelo menos um dos controles deve ser 1
+                for k in k_values:
+                    for N in N_values:
+                        # Valores de limiar para extração de características
+                        inc = 1 / N
+                        thresholding = np.arange(inc, 1, inc)
 
-# Valores de limiar para extração de características
-# thresholding = np.linspace(0.025, 0.95, num=10)
-
-# Definindo o valor de N
-N = 30
-
-# Calculando o incremento
-inc = 1 / N
-
-# Arange NumPy, para gerar os valores excluindo 0 e 1
-thresholding = np.arange(inc, 1, inc)
+                        # Processar com a combinação atual de parâmetros
+                        process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding)
 
 
-# Instanciando a classe ComplexNetwork
-CN = ComplexNetwork(thresholding)
+def process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding):
+    # Inicializando listas para armazenar os descritores e rótulos das imagens
+    degrees, forces, clustering, targets = [], [], [], []
 
-# Extração de características de redes compplexas para todas as imagens
-for img_path in img_paths:
-    # PARA IMAGEM BINÁRIA (FUNDO PRETO (O) CONTORNO BRANCO (255))
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    grade, force, cc = CN.extract_features(img)
+    # Instanciando a classe ComplexNetwork
+    CN = ComplexNetwork(thresholding)
 
-    # Armazenando os descritores extraídos
-    degrees.append(grade.T)
-    forces.append(force.T)
-    clustering.append(cc.T)
+    # Extração de características de redes complexas para todas as imagens
+    for img_path in img_paths:
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        grade, force, cc = CN.extract_features(d_ctrl, f_ctrl, c_ctrl, img)
 
-    # Extraindo o rótulo da imagem a partir do nome do arquivo. Pode mudar dependendo do dataset
-    targets.append(img_path.split("/")[-1].split("_")[0])
+        # Armazenando os descritores extraídos
+        degrees.append(grade.T)
+        forces.append(force.T)
+        clustering.append(cc.T)
 
-#Determinando as medidas utlizadas como features na RC
-# Combinando graus e forças em um único conjunto de características
+        # Extraindo o rótulo da imagem a partir do nome do arquivo
+        targets.append(img_path.split("/")[-1].split("_")[0])
 
-if d_ctrl == 1 and f_ctrl == 0 and c_ctrl == 0:
-    CNFeatures = forces
-elif d_ctrl == 0 and f_ctrl == 1 and c_ctrl == 0:
-    CNFeatures = degrees
-elif d_ctrl == 0 and f_ctrl == 0 and c_ctrl == 1:
-    CNFeatures = clustering
-elif d_ctrl == 1 and f_ctrl == 1 and c_ctrl == 0:
-    CNFeatures = [np.concatenate([d, f], axis=1) for d, f in zip(degrees, forces)]
-elif d_ctrl == 1 and f_ctrl == 0 and c_ctrl == 1:
-    CNFeatures = [np.concatenate([d, c], axis=1) for d, c in zip(degrees, clustering)]
-elif d_ctrl == 0 and f_ctrl == 1 and c_ctrl == 1:
-    CNFeatures = [np.concatenate([f, c], axis=1) for f, c in zip(forces, clustering)]
-elif d_ctrl == 1 and f_ctrl == 1 and c_ctrl == 1:
-    CNFeatures = [
-        np.concatenate([d, f, c], axis=1)
-        for d, f, c in zip(degrees, forces, clustering)
-    ]
+    # Determinando as medidas utilizadas como features na RC
+    CNFeatures = select_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering)
 
-# Instanciando a classe FisherVectorEncoding
-fisher_encoding = FisherVectorEncoding(k)
+    # Instanciando a classe FisherVectorEncoding
+    fisher_encoding = FisherVectorEncoding(k)
 
-# Configuração da validação cruzada estratificada
-skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+    # Configuração da validação cruzada estratificada
+    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
-# Listas para armazenar resultados globais
-overall_targets = []
-svm_overall_predictions = []
-svm_accuracies = []
-lda_overall_predictions = []
-lda_accuracies = []
+    # Listas para armazenar resultados globais
+    overall_targets, svm_overall_predictions, svm_accuracies = [], [], []
+    lda_overall_predictions, lda_accuracies = [], []
 
-# Loop de validação cruzada
-for train_index, test_index in skf.split(CNFeatures, targets):
-    # Separando os dados em conjuntos de treino e teste
-    train_descriptors = [CNFeatures[i] for i in train_index]
-    test_descriptors = [CNFeatures[i] for i in test_index]
-    train_targets = [targets[i] for i in train_index]
-    test_targets = [targets[i] for i in test_index]
+    # Loop de validação cruzada
+    for train_index, test_index in skf.split(CNFeatures, targets):
+        train_descriptors = [CNFeatures[i] for i in train_index]
+        test_descriptors = [CNFeatures[i] for i in test_index]
+        train_targets = [targets[i] for i in train_index]
+        test_targets = [targets[i] for i in test_index]
 
-    # Computando os vetores de Fisher para os conjuntos de treino e teste
-    training_fvs, testing_fvs = fisher_encoding.compute_fisher_vectors(
-        train_descriptors, test_descriptors
+        # Computando os vetores de Fisher para os conjuntos de treino e teste
+        training_fvs, testing_fvs = fisher_encoding.compute_fisher_vectors(
+            train_descriptors, test_descriptors
+        )
+
+        # Treinando e avaliando o modelo SVM
+        svm = LinearSVC(random_state=42, max_iter=10000, dual="auto")
+        svm.fit(training_fvs, train_targets)
+        predictions_svm = svm.predict(testing_fvs)
+
+        # Treinando e avaliando o modelo LDA
+        lda = LinearDiscriminantAnalysis(
+            solver="eigen", store_covariance=True, shrinkage="auto"
+        )
+        lda.fit(training_fvs, train_targets)
+        predictions_lda = lda.predict(testing_fvs)
+
+        # Armazenando resultados para análise posterior
+        overall_targets.extend(test_targets)
+
+        # SVM
+        svm_overall_predictions.extend(predictions_svm)
+        svm_accuracies.append(accuracy_score(test_targets, predictions_svm))
+
+        # LDA
+        lda_overall_predictions.extend(predictions_lda)
+        lda_accuracies.append(accuracy_score(test_targets, predictions_lda))
+
+    # Calculando e exibindo a acurácia média e o desvio padrão - SVM
+    svm_mean_accuracy = np.mean(svm_accuracies)
+    svm_std_accuracy = np.std(svm_accuracies)
+    print(
+        f"SVM Mean accuracy over 10 folds for d_ctrl={d_ctrl}, f_ctrl={f_ctrl}, c_ctrl={c_ctrl}, k={k}, N={N}: {svm_mean_accuracy:.4f} ± {svm_std_accuracy:.4f}"
     )
 
-    # Treinando o modelo SVM com os vetores de Fisher de treino
-    svm = LinearSVC(
-        random_state=42, max_iter=10000, dual="auto"
-    )  # Aumentado max_iter para garantir a convergência
-    svm.fit(training_fvs, train_targets)
-
-    # Treinando o modelo LDA com os vetores de Fisher de treino
-    lda = LinearDiscriminantAnalysis(
-        solver="eigen", store_covariance=True, shrinkage="auto"
+    # Calculando e exibindo a acurácia média e o desvio padrão - LDA
+    lda_mean_accuracy = np.mean(lda_accuracies)
+    lda_std_accuracy = np.std(lda_accuracies)
+    print(
+        f"LDA Mean accuracy over 10 folds for d_ctrl={d_ctrl}, f_ctrl={f_ctrl}, c_ctrl={c_ctrl}, k={k}, N={N}: {lda_mean_accuracy:.4f} ± {lda_std_accuracy:.4f}"
     )
-    lda.fit(training_fvs, train_targets)
 
-    # Realizando predições com o modelo treinado
-    predictions_svm = svm.predict(testing_fvs)
-
-    # Predições com LDA
-    predictions_lda = lda.predict(testing_fvs)
-
-    # Armazenando resultados para análise posterior
-    overall_targets.extend(test_targets)
-
-    # SVM
-    svm_overall_predictions.extend(predictions_svm)
-    svm_accuracies.append(accuracy_score(test_targets, predictions_svm))
-
-    # LDA
-    lda_overall_predictions.extend(predictions_lda)
-    lda_accuracies.append(accuracy_score(test_targets, predictions_lda))
-
-
-# Calculando e exibindo a acurácia média e o desvio padrão - SVM
-svm_mean_accuracy = np.mean(svm_accuracies)
-svm_std_accuracy = np.std(svm_accuracies)
-print(
-    f"SVM Mean accuracy over 10 folds: {svm_mean_accuracy:.4f} ± {svm_std_accuracy:.4f}"
-)
-
-# Calculando e exibindo a acurácia média e o desvio padrão - LDA
-lda_mean_accuracy = np.mean(lda_accuracies)
-lda_std_accuracy = np.std(lda_accuracies)
-print(
-    f"LDA Mean accuracy over 10 folds: {lda_mean_accuracy:.4f} ± {lda_std_accuracy:.4f}"
-)
-
-
-# Gerando e exibindo o relatório de classificação
-# print(classification_report(overall_targets, svm_overall_predictions))
-
-
-#  Salvar os resultados em um arquivo CSV
-with open("codes/results.csv", mode="a") as csvfile:
-    fieldnames = [
-        "d",
-        "f",
-        "c",
-        "thre_inc",
-        "n_modes",
-        "svm_acc",
-        "svm_std",
-        "lda_acc",
-        "lda_std",
-    ]
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-   
-    # increment_description = np.diff(thresholding.tolist())[0]
-    writer.writerow(
-        {
-            "d": d_ctrl,
-            "f": f_ctrl,
-            "c": c_ctrl,
-            "thre_inc": f"0:{inc:.4f}:1",
-            "n_modes": k,
-            "svm_acc": f"{svm_mean_accuracy:.4f}",
-            "svm_std": f"{svm_std_accuracy:.4f}",
-            "lda_acc": f"{lda_mean_accuracy:.4f}",
-            "lda_std": f"{lda_std_accuracy:.4f}",
-        }
+    # Salvando os resultados em um arquivo CSV
+    save_results(
+        d_ctrl,
+        f_ctrl,
+        c_ctrl,
+        N,
+        k,
+        svm_mean_accuracy,
+        svm_std_accuracy,
+        lda_mean_accuracy,
+        lda_std_accuracy,
     )
+
+
+def select_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering):
+    """
+    Seleciona as features a serem utilizadas na RC com base nos parâmetros de controle.
+
+    :param d_ctrl: Controle do grau
+    :param f_ctrl: Controle da força
+    :param c_ctrl: Controle do coeficiente de clustering
+    :param degrees: Lista de graus
+    :param forces: Lista de forças
+    :param clustering: Lista de coeficientes de clustering
+    :return: Lista de características combinadas
+    """
+    if d_ctrl == 1 and f_ctrl == 0 and c_ctrl == 0:
+        return degrees
+    elif d_ctrl == 0 and f_ctrl == 1 and c_ctrl == 0:
+        return forces
+    elif d_ctrl == 0 and f_ctrl == 0 and c_ctrl == 1:
+        return clustering
+    elif d_ctrl == 1 and f_ctrl == 1 and c_ctrl == 0:
+        return [np.concatenate([d, f], axis=1) for d, f in zip(degrees, forces)]
+    elif d_ctrl == 1 and f_ctrl == 0 and c_ctrl == 1:
+        return [np.concatenate([d, c], axis=1) for d, c in zip(degrees, clustering)]
+    elif d_ctrl == 0 and f_ctrl == 1 and c_ctrl == 1:
+        return [np.concatenate([f, c], axis=1) for f, c in zip(forces, clustering)]
+    elif d_ctrl == 1 and f_ctrl == 1 and c_ctrl == 1:
+        return [
+            np.concatenate([d, f, c], axis=1)
+            for d, f, c in zip(degrees, forces, clustering)
+        ]
+
+
+def save_results(
+    d_ctrl,
+    f_ctrl,
+    c_ctrl,
+    N,
+    k,
+    svm_mean_accuracy,
+    svm_std_accuracy,
+    lda_mean_accuracy,
+    lda_std_accuracy,
+):
+    """
+    Salva os resultados em um arquivo CSV.
+
+    :param d_ctrl: Controle do grau
+    :param f_ctrl: Controle da força
+    :param c_ctrl: Controle do coeficiente de clustering
+    :param N: Número de limiares
+    :param k: Número de componentes do GMM
+    :param svm_mean_accuracy: Acurácia média do SVM
+    :param svm_std_accuracy: Desvio padrão da acurácia do SVM
+    :param lda_mean_accuracy: Acurácia média do LDA
+    :param lda_std_accuracy: Desvio padrão da acurácia do LDA
+    """
+    with open("codes/results_leaves.csv", mode="a", newline="") as csvfile:
+        fieldnames = [
+            "d",
+            "f",
+            "c",
+            "thre_inc",
+            "n_modes",
+            "svm_acc",
+            "svm_std",
+            "lda_acc",
+            "lda_std",
+        ]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writerow(
+            {
+                "d": d_ctrl,
+                "f": f_ctrl,
+                "c": c_ctrl,
+                "thre_inc": N,
+                "n_modes": k,
+                "svm_acc": f"{svm_mean_accuracy:.4f}",
+                "svm_std": f"{svm_std_accuracy:.4f}",
+                "lda_acc": f"{lda_mean_accuracy:.4f}",
+                "lda_std": f"{lda_std_accuracy:.4f}",
+            }
+        )
+
+
+if __name__ == "__main__":
+    main()
