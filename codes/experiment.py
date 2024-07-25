@@ -26,7 +26,7 @@ from FisherVectorEncoding import FisherVectorEncoding
 # Função principal
 def main():
     # Caminho do diretório contendo as imagens
-    image_directory = "datasets/Leaves256x256c/"
+    image_directory = "datasets/eth80/"
     pattern = image_directory + "*.png"
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
@@ -36,8 +36,11 @@ def main():
     d_ctrl_values = [0, 1]
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
-    k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20]
-    N_values = [10, 20, 25, 30, 35, 40, 45, 50]
+    # k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20]
+    k_values = [4, 8, 12, 16, 20]
+    # N_values = [10, 20, 25, 30, 35, 40, 45, 50]
+    N_values = [15, 20, 30, 40, 50]
+
 
     # Loop sobre todas as combinações de parâmetros
     for d_ctrl in d_ctrl_values:
@@ -206,7 +209,7 @@ def save_results(
     :param lda_mean_accuracy: Acurácia média do LDA
     :param lda_std_accuracy: Desvio padrão da acurácia do LDA
     """
-    with open("codes/results_leaves.csv", mode="a", newline="") as csvfile:
+    with open("codes/results_eth.csv", mode="a", newline="") as csvfile:
         fieldnames = [
             "d",
             "f",
