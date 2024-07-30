@@ -93,44 +93,4 @@ class ComplexNetwork:
             clustering_coeffs[nonzero_possible] = triangles[nonzero_possible] / possible_triangles[nonzero_possible]
             
             return clustering_coeffs
-    # def _clustering(self, A):
-    #     """
-    #     Calcula o coeficiente de clustering para cada nó da rede.
-
-    #     :param A: Matriz de adjacência da rede.
-    #     :return: Coeficiente de clustering.
-    #     """
-    #     G = nx.Graph(A)
-    #     clustering_coeffs = nx.clustering(G)
-    #     # Convertendo o dicionário para uma lista ordenada de coeficientes de clustering
-    #     C = np.array([clustering_coeffs[i] for i in range(len(clustering_coeffs))])
-    #     return C
-
-    # def _clustering(self, A):
-    #     """
-    #     Calcula o coeficiente de clustering para cada nó da rede
-
-    #     :param A: Matriz de adjacência da rede.
-    #     :return: Coeficiente de clustering.
-    #     """
-    #     n = A.shape[0]
-    #     C = np.zeros(n)
-
-    #     for i in range(n):
-    #         neighbors = np.where(A[i] == 1)[0]
-    #         k_i = len(neighbors)
-    #         if k_i < 2:
-    #             C[i] = 0.0
-    #             continue
-
-    #         links = 0
-    #         for u in neighbors:
-    #             for v in neighbors:
-    #                 if A[u, v] == 1:
-    #                     links += 1
-
-    #         links /= 2  # Cada triângulo é contado duas vezes.
-    #         C[i] = (2 * links) / (k_i * (k_i - 1))
-
-    #     return C
-
+    

@@ -1,0 +1,7 @@
+numpy
+glob2
+opencv-python
+scikit-learn
+tqdm
+scipy
+scikit-image

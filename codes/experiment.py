@@ -8,6 +8,7 @@ seguido de classificação com SVM e LDA.
 Criado em: 21 Março 2024
 Autor: Lucas
 """
+# pip install -r requirements.txt
 
 # Importações necessárias
 import numpy as np
@@ -18,6 +19,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from tqdm import tqdm
 
 from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
@@ -26,11 +28,12 @@ from FisherVectorEncoding import FisherVectorEncoding
 # Função principal
 def main():
     # Caminho do diretório contendo as imagens
-    image_directory = "datasets/eth80/"
+    image_directory = "datasets/fish_otolith/"
     pattern = image_directory + "*.png"
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
     img_paths = glob.glob(pattern)
+    print(f"Número total de imagens encontradas: {len(img_paths)}")
 
     # Definindo as possíveis combinações de parâmetros
     d_ctrl_values = [0, 1]
@@ -40,9 +43,12 @@ def main():
     k_values = [4, 8, 12, 16, 20]
     # N_values = [10, 20, 25, 30, 35, 40, 45, 50]
     N_values = [15, 20, 30, 40, 50]
+    
+    # Lendo combinações já processadas
+    processed_combinations = read_processed_combinations("codes/results_fish.csv")
+    print(f"Número de combinações já processadas: {len(processed_combinations)}")
 
-
-    # Loop sobre todas as combinações de parâmetros
+    # Loop sobre todas as combinações de parâmetros com animação de loading
     for d_ctrl in d_ctrl_values:
         for f_ctrl in f_ctrl_values:
             for c_ctrl in c_ctrl_values:
@@ -50,12 +56,37 @@ def main():
                     continue  # Pelo menos um dos controles deve ser 1
                 for k in k_values:
                     for N in N_values:
+                        # Verificar se a combinação já foi processada
+                        if (d_ctrl, f_ctrl, c_ctrl, k, N) in processed_combinations:
+                            continue
+
                         # Valores de limiar para extração de características
                         inc = 1 / N
                         thresholding = np.arange(inc, 1, inc)
 
+                        # Mostrar animação de loading
+                        print(f"Processando combinação d_ctrl={d_ctrl}, f_ctrl={f_ctrl}, c_ctrl={c_ctrl}, k={k}, N={N}...")
+                        
                         # Processar com a combinação atual de parâmetros
                         process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding)
+
+
+def read_processed_combinations(csv_file):
+    processed_combinations = set()
+    try:
+        with open(csv_file, mode='r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                d_ctrl = int(row['d'])
+                f_ctrl = int(row['f'])
+                c_ctrl = int(row['c'])
+                k = int(row['n_modes'])
+                N = int(row['thre_inc'])
+                processed_combinations.add((d_ctrl, f_ctrl, c_ctrl, k, N))
+    except FileNotFoundError:
+        # Se o arquivo não existe, retornamos um conjunto vazio
+        pass
+    return processed_combinations
 
 
 def process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding):
@@ -65,21 +96,29 @@ def process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding):
     # Instanciando a classe ComplexNetwork
     CN = ComplexNetwork(thresholding)
 
-    # Extração de características de redes complexas para todas as imagens
-    for img_path in img_paths:
-        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-        grade, force, cc = CN.extract_features(d_ctrl, f_ctrl, c_ctrl, img)
+    # Usando tqdm para mostrar a barra de progresso
+    with tqdm(total=len(img_paths), desc="Processando imagens") as pbar:
+        for img_path in img_paths:
+            img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+            grade, force, cc = CN.extract_features(d_ctrl, f_ctrl, c_ctrl, img)
 
-        # Armazenando os descritores extraídos
-        degrees.append(grade.T)
-        forces.append(force.T)
-        clustering.append(cc.T)
+            # Armazenando os descritores extraídos
+            degrees.append(grade.T)
+            forces.append(force.T)
+            clustering.append(cc.T)
 
-        # Extraindo o rótulo da imagem a partir do nome do arquivo
-        targets.append(img_path.split("/")[-1].split("_")[0])
+            # Extraindo o rótulo da imagem a partir do nome do arquivo
+            targets.append(img_path.split("/")[-1].split("_")[0])
+
+            # Atualizando a barra de progresso
+            pbar.update(1)
+
+    # Exibindo o número total de rótulos processados
+    tqdm.write(f"Número total de rótulos processados: {len(targets)}")
 
     # Determinando as medidas utilizadas como features na RC
     CNFeatures = select_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering)
+    tqdm.write(f"Características selecionadas para d_ctrl={d_ctrl}, f_ctrl={f_ctrl}, c_ctrl={c_ctrl}")
 
     # Instanciando a classe FisherVectorEncoding
     fisher_encoding = FisherVectorEncoding(k)
@@ -129,14 +168,14 @@ def process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding):
     # Calculando e exibindo a acurácia média e o desvio padrão - SVM
     svm_mean_accuracy = np.mean(svm_accuracies)
     svm_std_accuracy = np.std(svm_accuracies)
-    print(
+    tqdm.write(
         f"SVM Mean accuracy over 10 folds for d_ctrl={d_ctrl}, f_ctrl={f_ctrl}, c_ctrl={c_ctrl}, k={k}, N={N}: {svm_mean_accuracy:.4f} ± {svm_std_accuracy:.4f}"
     )
 
     # Calculando e exibindo a acurácia média e o desvio padrão - LDA
     lda_mean_accuracy = np.mean(lda_accuracies)
     lda_std_accuracy = np.std(lda_accuracies)
-    print(
+    tqdm.write(
         f"LDA Mean accuracy over 10 folds for d_ctrl={d_ctrl}, f_ctrl={f_ctrl}, c_ctrl={c_ctrl}, k={k}, N={N}: {lda_mean_accuracy:.4f} ± {lda_std_accuracy:.4f}"
     )
 
@@ -152,6 +191,8 @@ def process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding):
         lda_mean_accuracy,
         lda_std_accuracy,
     )
+    tqdm.write(f"Resultados salvos para d_ctrl={d_ctrl}, f_ctrl={f_ctrl}, c_ctrl={c_ctrl}, k={k}, N={N}")
+
 
 
 def select_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering):
@@ -209,7 +250,7 @@ def save_results(
     :param lda_mean_accuracy: Acurácia média do LDA
     :param lda_std_accuracy: Desvio padrão da acurácia do LDA
     """
-    with open("codes/results_eth.csv", mode="a", newline="") as csvfile:
+    with open("codes/results_fish.csv", mode="a", newline="") as csvfile:
         fieldnames = [
             "d",
             "f",
