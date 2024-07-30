@@ -6,7 +6,7 @@ Script para extrair características de imagens usando Redes Complexas e Vetores
 seguido de classificação com SVM e LDA.
 
 Criado em: 21 Março 2024
-Autor: Lucas
+Autores: Lucas C. Ribas e Vitor Emanuel S. Rozeno
 """
 # pip install -r requirements.txt
 
@@ -28,7 +28,7 @@ from FisherVectorEncoding import FisherVectorEncoding
 # Função principal
 def main():
     # Caminho do diretório contendo as imagens
-    image_directory = "datasets/fish_otolith/"
+    image_directory = "datasets/eth80/"
     pattern = image_directory + "*.png"
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
@@ -45,7 +45,7 @@ def main():
     N_values = [15, 20, 30, 40, 50]
     
     # Lendo combinações já processadas
-    processed_combinations = read_processed_combinations("codes/results_fish.csv")
+    processed_combinations = read_processed_combinations("codes/results_eth.csv")
     print(f"Número de combinações já processadas: {len(processed_combinations)}")
 
     # Loop sobre todas as combinações de parâmetros com animação de loading
@@ -250,7 +250,7 @@ def save_results(
     :param lda_mean_accuracy: Acurácia média do LDA
     :param lda_std_accuracy: Desvio padrão da acurácia do LDA
     """
-    with open("codes/results_fish.csv", mode="a", newline="") as csvfile:
+    with open("codes/results_eth.csv", mode="a", newline="") as csvfile:
         fieldnames = [
             "d",
             "f",
