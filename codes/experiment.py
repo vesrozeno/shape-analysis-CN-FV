@@ -28,7 +28,7 @@ from FisherVectorEncoding import FisherVectorEncoding
 # Função principal
 def main():
     # Caminho do diretório contendo as imagens
-    image_directory = "datasets/fish_otolith/"
+    image_directory = "datasets/Leaves256x256c/"
     pattern = image_directory + "*.png"
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
@@ -39,13 +39,14 @@ def main():
     d_ctrl_values = [0, 1]
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
-    k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+    k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20]
     #k_values = [4, 8, 12, 16, 20]
-    N_values = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]
+    N_values = [10, 20, 25, 30, 35, 40, 45, 50]
+    #N_values = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]
     #N_values = [15, 20, 30, 40, 50]
     
     # Lendo combinações já processadas
-    processed_combinations = read_processed_combinations("codes/results_fish.csv")
+    processed_combinations = read_processed_combinations("codes/results_leaves.csv")
     print(f"Número de combinações já processadas: {len(processed_combinations)}")
 
     # Loop sobre todas as combinações de parâmetros com animação de loading
@@ -165,6 +166,8 @@ def process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding):
         lda_overall_predictions.extend(predictions_lda)
         lda_accuracies.append(accuracy_score(test_targets, predictions_lda))
 
+    num_fisher_vectors = len(training_fvs[0])
+
     # Calculando e exibindo a acurácia média e o desvio padrão - SVM
     svm_mean_accuracy = np.mean(svm_accuracies)
     svm_std_accuracy = np.std(svm_accuracies)
@@ -186,6 +189,7 @@ def process_combination(img_paths, d_ctrl, f_ctrl, c_ctrl, k, N, thresholding):
         c_ctrl,
         N,
         k,
+        num_fisher_vectors,
         svm_mean_accuracy,
         svm_std_accuracy,
         lda_mean_accuracy,
@@ -232,6 +236,7 @@ def save_results(
     c_ctrl,
     N,
     k,
+    num_fisher_vectors,
     svm_mean_accuracy,
     svm_std_accuracy,
     lda_mean_accuracy,
@@ -250,13 +255,14 @@ def save_results(
     :param lda_mean_accuracy: Acurácia média do LDA
     :param lda_std_accuracy: Desvio padrão da acurácia do LDA
     """
-    with open("codes/results_fish.csv", mode="a", newline="") as csvfile:
+    with open("codes/results_leaves.csv", mode="a", newline="") as csvfile:
         fieldnames = [
             "d",
             "f",
             "c",
             "thre_inc",
             "n_modes",
+            "n_fvs",
             "svm_acc",
             "svm_std",
             "lda_acc",
@@ -271,6 +277,7 @@ def save_results(
                 "c": c_ctrl,
                 "thre_inc": N,
                 "n_modes": k,
+                "n_fvs":num_fisher_vectors,
                 "svm_acc": f"{svm_mean_accuracy:.4f}",
                 "svm_std": f"{svm_std_accuracy:.4f}",
                 "lda_acc": f"{lda_mean_accuracy:.4f}",
