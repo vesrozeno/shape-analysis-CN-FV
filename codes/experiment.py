@@ -28,7 +28,7 @@ from FisherVectorEncoding import FisherVectorEncoding
 # Função principal
 def main():
     # Caminho do diretório contendo as imagens
-    image_directory = "datasets/Leaves256x256c/"
+    image_directory = "datasets/fish_otolith/"
     pattern = image_directory + "*.png"
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
@@ -39,14 +39,14 @@ def main():
     d_ctrl_values = [0, 1]
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
-    k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
-    #k_values = [4, 8, 12, 16, 20]
-    N_values = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]
+    #k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+    k_values = [4, 8, 12, 16, 20]
     #N_values = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]
+    N_values = [10, 20, 30]
     #N_values = [15, 20, 30, 40, 50]
     
     # Lendo combinações já processadas
-    processed_combinations = read_processed_combinations("codes/results_leaves2.csv")
+    processed_combinations = read_processed_combinations("codes/results_fish2.csv")
     print(f"Número de combinações já processadas: {len(processed_combinations)}")
 
     # Loop sobre todas as combinações de parâmetros com animação de loading
@@ -255,7 +255,7 @@ def save_results(
     :param lda_mean_accuracy: Acurácia média do LDA
     :param lda_std_accuracy: Desvio padrão da acurácia do LDA
     """
-    with open("codes/results_leaves2.csv", mode="a", newline="") as csvfile:
+    with open("codes/results_fish2.csv", mode="a", newline="") as csvfile:
         fieldnames = [
             "d",
             "f",
