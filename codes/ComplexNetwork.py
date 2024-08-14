@@ -11,7 +11,7 @@ class ComplexNetwork:
         """
         self.thresholding = thresholding
 
-    def extract_features(self, d_ctrl, f_ctrl, c_ctrl, img):
+    def extract_features(self, img):
         """
         Extrai características da imagem.
 
@@ -23,14 +23,12 @@ class ComplexNetwork:
         )  # Encontra coordenadas dos pixels não-zero (brancos) na imagem.
         cn = self._cn_make(coord)  # Modelagem de rede.
         grade, force, cc = self._thresholding_cn(
-            d_ctrl, f_ctrl, c_ctrl, cn, self.thresholding
+             cn, self.thresholding
         )  # CN evoluindo com a seleção de thresholding.
 
         # Normalização de grau e força.
-        if(d_ctrl):
-            grade = grade / grade.shape[1]
-        if(f_ctrl):
-            force = force / force.shape[1]
+        grade = grade / grade.shape[1]
+        force = force / force.shape[1]
 
         return grade, force, cc
 
@@ -47,7 +45,7 @@ class ComplexNetwork:
 
         return CN
 
-    def _thresholding_cn(self, d_ctrl, f_ctrl, c_ctrl, cn, thre):
+    def _thresholding_cn(self, cn, thre):
         """
         Aplica thresholding à rede complexa.
 
@@ -64,13 +62,10 @@ class ComplexNetwork:
         for x in thre:
             c = cn < x
             cnU[c] = 1
-            if d_ctrl:
-                grade.append(np.sum(cnU, axis=0) - 1)
-            if f_ctrl:
-                cnW[c] = cn[c]
-                force.append(np.sum(cnW, axis=0))
-            if c_ctrl:
-                cc.append(self._clustering(cnU))
+            grade.append(np.sum(cnU, axis=0) - 1)
+            cnW[c] = cn[c]
+            force.append(np.sum(cnW, axis=0))
+            cc.append(self._clustering(cnU))
 
         return np.array(grade), np.array(force), np.array(cc)
 
