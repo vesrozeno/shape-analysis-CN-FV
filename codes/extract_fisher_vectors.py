@@ -99,6 +99,9 @@ def extract_and_save_fisher_vectors(img_paths):
                 'clustering': clustering
             }
 
+            # Salvando o arquivo pickle após a extração de features para o threshold N
+            save_data(fisher_vectors_dict, targets, feature_data)
+
         with tqdm(total=len(d_ctrl_values)*len(f_ctrl_values)*len(c_ctrl_values)*len(k_values)-len(k_values), 
                   desc=f"Calculando Fisher Vectors para N={N}") as wbar:
             for d_ctrl in d_ctrl_values:
@@ -124,17 +127,23 @@ def extract_and_save_fisher_vectors(img_paths):
 
                             # Salvando os Fisher Vectors dessa combinação no dicionário
                             fisher_vectors_dict[(d_ctrl, f_ctrl, c_ctrl, k, N)] = fisher_vectors
+
                             # Atualizando a barra de progresso
                             wbar.update(1)
+            # Salvando o arquivo pickle após o cálculo do Fisher Vector
+            save_data(fisher_vectors_dict, targets, feature_data)
 
-    # Salvando os Fisher Vectors, rótulos e dados de características em um arquivo pickle
+def save_data(fisher_vectors_dict, targets, feature_data):
+    """
+    Função para salvar os dados no arquivo pickle.
+    """
     with open(fisher_vectors_pkl, "wb") as f:
         pickle.dump({
             "fisher_vectors": fisher_vectors_dict,
             "targets": targets,
             "feature_data": feature_data
         }, f)
-    print(f"Fisher Vectors, rótulos e dados de características salvos em '{fisher_vectors_pkl}'.")
+    print(f"Dados salvos em '{fisher_vectors_pkl}'.")
 
 def combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering):
     """
