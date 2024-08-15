@@ -75,7 +75,6 @@ def extract_and_save_fisher_vectors(img_paths):
             # print(f"Características já calculadas para N={N}. Pulando...")
             degrees, forces, clustering = feature_data[N]['degrees'], feature_data[N]['forces'], feature_data[N]['clustering']
         else:
-            # Inicializando listas para os descritores dessa combinação
             degrees, forces, clustering = [], [], []
 
             # Usando tqdm para mostrar a barra de progresso
