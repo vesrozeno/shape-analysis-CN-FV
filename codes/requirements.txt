@@ -6,3 +6,4 @@ tqdm
 scipy
 scikit-image
 pandas
+shutil

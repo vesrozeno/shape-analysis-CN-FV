@@ -19,8 +19,8 @@ import csv
 import os
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_aforo.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
-results_csv = "results/results_aforo.csv"  # Arquivo CSV para salvar os resultados
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_portuguese.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+results_csv = "results/results_portuguese.csv"  # Arquivo CSV para salvar os resultados
 
 def main():
     # Lendo combinações já processadas

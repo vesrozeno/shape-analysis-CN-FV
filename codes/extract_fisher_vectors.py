@@ -14,25 +14,27 @@ import glob
 import cv2
 import pickle
 from tqdm import tqdm
+import shutil
+from multiprocessing import Pool, cpu_count
 
 from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/fish_otolith/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_fish.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/LeavesPortuguese/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_portuguese.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 
-def main():
-    pattern = image_directory + "*.png"
+def main(num_cores=2):
+    pattern = image_directory + "*.bmp"
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
     img_paths = glob.glob(pattern)
     print(f"Número total de imagens encontradas: {len(img_paths)}")
 
     # Extração das características e cálculo dos Fisher Vectors
-    extract_and_save_fisher_vectors(img_paths)
+    extract_and_save_fisher_vectors(img_paths, num_cores)
 
-def extract_and_save_fisher_vectors(img_paths):
+def extract_and_save_fisher_vectors(img_paths, num_cores):
     # Carregar dados existentes do arquivo .pkl, se disponível
     if os.path.exists(fisher_vectors_pkl):
         with open(fisher_vectors_pkl, "rb") as f:
@@ -50,7 +52,7 @@ def extract_and_save_fisher_vectors(img_paths):
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
     k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
-    N_values = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]
+    N_values = [10, 20, 25, 30, 35, 40, 45, 50]
 
     # Verificando se já existem targets no arquivo
     if len(targets) < len(img_paths):
@@ -79,18 +81,17 @@ def extract_and_save_fisher_vectors(img_paths):
 
             # Usando tqdm para mostrar a barra de progresso
             with tqdm(total=len(img_paths), desc=f"Extraindo features para N={N}") as pbar:
-                for img_path in img_paths:
-                    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-                    
-                    # Calcular características para todos os thresholds
-                    d, f, c = CN.extract_features(img)
+                if num_cores is None:
+                    num_cores = cpu_count()
+                with Pool(num_cores) as pool:
+                    results = pool.map(CN.extract_features, [cv2.imread(img_path, cv2.IMREAD_GRAYSCALE) for img_path in img_paths])
 
+                for d, f, c in results:
                     degrees.append(d.T)
                     forces.append(f.T)
                     clustering.append(c.T)
-                    # Atualizando a barra de progresso
                     pbar.update(1)
-            
+
             # Adicionando as características extraídas para essa configuração de N ao dicionário
             feature_data[N] = {
                 'degrees': degrees,
@@ -101,7 +102,7 @@ def extract_and_save_fisher_vectors(img_paths):
             # Salvando o arquivo pickle após a extração de features para o threshold N
             save_data(fisher_vectors_dict, targets, feature_data, "feature_data")
 
-        with tqdm(total=len(d_ctrl_values)*len(f_ctrl_values)*len(c_ctrl_values)*len(k_values)-len(k_values), 
+        with tqdm(total=len(d_ctrl_values) * len(f_ctrl_values) * len(c_ctrl_values) * len(k_values) - len(k_values),
                   desc=f"Calculando Fisher Vectors para N={N}") as wbar:
             for d_ctrl in d_ctrl_values:
                 for f_ctrl in f_ctrl_values:
@@ -109,7 +110,7 @@ def extract_and_save_fisher_vectors(img_paths):
                         if d_ctrl == 0 and f_ctrl == 0 and c_ctrl == 0:
                             continue  # Pelo menos um dos controles deve ser 1
                         for k in k_values:
-                             # Verificar se a combinação já foi processada
+                            # Verificar se a combinação já foi processada
                             if (d_ctrl, f_ctrl, c_ctrl, k, N) in fisher_vectors_dict:
                                 wbar.update(1)
                                 continue
@@ -128,13 +129,20 @@ def extract_and_save_fisher_vectors(img_paths):
 
                             # Atualizando a barra de progresso
                             wbar.update(1)
-            # Salvando o arquivo pickle após o cálculo do Fisher Vector
-            save_data(fisher_vectors_dict, targets, feature_data, "fisher_vectors")
+        # Salvando o arquivo pickle após o cálculo do Fisher Vector
+        save_data(fisher_vectors_dict, targets, feature_data, "fisher_vectors")
 
 def save_data(fisher_vectors_dict, targets, feature_data, changed_data):
     """
     Função para salvar os dados no arquivo pickle se houver novas informações para salvar.
+    Cria um backup do arquivo existente antes de sobrescrevê-lo.
     """
+    # Se o arquivo pickle já existir, cria um backup
+    if os.path.exists(fisher_vectors_pkl):
+        backup_path = fisher_vectors_pkl + ".bak"
+        shutil.copy2(fisher_vectors_pkl, backup_path)
+        print(f"Backup do arquivo criado em '{backup_path}'.")
+
     # Se o arquivo pickle não existir, cria um arquivo vazio
     if not os.path.exists(fisher_vectors_pkl):
         with open(fisher_vectors_pkl, "wb") as f:
