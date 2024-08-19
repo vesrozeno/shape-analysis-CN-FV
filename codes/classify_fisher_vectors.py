@@ -72,7 +72,12 @@ def read_processed_combinations(csv_file):
     return processed_combinations
 
 def validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N):
-    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+
+    # Verifique o número de amostras na menor classe
+    min_class_count = min([targets.count(t) for t in set(targets)])
+    n_splits = min(10, min_class_count)  # Ajuste n_splits para evitar o erro
+
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
     svm_accuracies = []
     lda_accuracies = []
