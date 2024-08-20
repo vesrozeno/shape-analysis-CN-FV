@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Script para classificar Vetores de Fisher usando SVM e LDA.
+Script para classificar Vetores de Fisher usando SVM e LDA com gerenciamento de recursos.
 
 Criado em: 21 Março 2024
 Autores: Lucas C. Ribas e Vitor Emanuel S. Rozeno
@@ -17,14 +17,18 @@ import numpy as np
 import csv
 import os
 from joblib import Parallel, delayed
+import psutil
+import time
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_aforo.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
-results_csv = "results/results_aforo.csv"  # Arquivo CSV para salvar os resultados
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_teste.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+results_csv = "results/results_teste4.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = -1  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
+memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
+cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
 
 def main():
-    global n_jobs
+    global n_jobs, memory_limit_mb, cpu_limit_percent
     
     # Permitir que o usuário defina o número de núcleos a serem utilizados
     try:
@@ -32,7 +36,19 @@ def main():
     except ValueError:
         print("Entrada inválida. Usando todos os núcleos disponíveis.")
         n_jobs = -1
-
+    
+    # Permitir que o usuário defina o limite de memória
+    try:
+        memory_limit_mb = int(input(f"Digite o limite de memória em MB (padrão: {memory_limit_mb} MB): "))
+    except ValueError:
+        print(f"Entrada inválida. Usando o limite padrão de {memory_limit_mb} MB.")
+    
+    # Permitir que o usuário defina o limite de uso da CPU
+    try:
+        cpu_limit_percent = int(input(f"Digite o limite máximo de uso da CPU em porcentagem (padrão: {cpu_limit_percent}%): "))
+    except ValueError:
+        print(f"Entrada inválida. Usando o limite padrão de {cpu_limit_percent}%.")
+    
     # Lendo combinações já processadas
     processed_combinations = read_processed_combinations(results_csv)
     print(f"Número de combinações já processadas: {len(processed_combinations)}")
@@ -49,13 +65,21 @@ def main():
     print(f"Length of targets: {len(targets)}")
 
     # Executar a classificação para cada combinação de parâmetros sem barra de progresso
-    Parallel(n_jobs=n_jobs)(delayed(process_combination)(params, fisher_vectors, targets, processed_combinations) for params, fisher_vectors in fisher_vectors_dict.items())
+    Parallel(n_jobs=n_jobs)(
+        delayed(process_combination)(params, fisher_vectors, targets, processed_combinations) 
+        for params, fisher_vectors in fisher_vectors_dict.items()
+    )
 
 def process_combination(params, fisher_vectors, targets, processed_combinations):
     d_ctrl, f_ctrl, c_ctrl, k, N = params
 
     # Verificando se a combinação já foi processada
     if (d_ctrl, f_ctrl, c_ctrl, k, N) not in processed_combinations:
+        # Verifique se os limites de recursos estão dentro do aceitável antes de processar
+        while not check_system_resources():
+            print("Aguardando recursos suficientes para continuar a execução...")
+            time.sleep(5)  # Aguarde 5 segundos antes de verificar novamente
+
         # Executar a validação do modelo
         validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N)
 
@@ -135,6 +159,29 @@ def save_results(d_ctrl, f_ctrl, c_ctrl, N, k, num_fisher_vectors, svm_mean_accu
             "lda_acc": f"{lda_mean_accuracy:.4f}",
             "lda_std": f"{lda_std_accuracy:.4f}",
         })
+
+def check_system_resources():
+    """
+    Verifica se o sistema tem recursos suficientes para continuar a execução.
+    Retorna True se os recursos estiverem dentro dos limites definidos, caso contrário, False.
+    """
+    memory_info = psutil.virtual_memory()
+    memory_used_mb = memory_info.used / (1024 * 1024)
+    cpu_percent = psutil.cpu_percent(interval=1)
+
+    # Construa a string de status de recursos
+    resource_status = (
+        f"Uso de memória: {memory_used_mb:.2f} MB, Limite: {memory_limit_mb} MB | "
+        f"Uso de CPU: {cpu_percent:.2f}%, Limite: {cpu_limit_percent}%"
+    )
+
+    # Imprima a string de status de recursos com retorno de carro e limpeza de linha
+    print(f"\r{resource_status}\033[K", end="")
+
+    # Verificar se os limites de memória e CPU foram excedidos
+    if memory_used_mb > memory_limit_mb or cpu_percent > cpu_limit_percent:
+        return False
+    return True
 
 if __name__ == "__main__":
     main()
