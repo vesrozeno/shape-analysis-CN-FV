@@ -13,9 +13,8 @@ import numpy as np
 import glob
 import cv2
 import pickle
-from tqdm import tqdm
 import shutil
-from multiprocessing import Pool, cpu_count
+from joblib import Parallel, delayed
 
 from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
@@ -24,7 +23,7 @@ from FisherVectorEncoding import FisherVectorEncoding
 image_directory = "datasets/LeavesPortuguese/"  # Caminho do diretório contendo as imagens
 fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_portuguese.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 
-def main(num_cores=2):
+def main(num_cores):
     pattern = image_directory + "*.bmp"
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
@@ -79,18 +78,17 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
             # Inicializando listas para os descritores dessa combinação
             degrees, forces, clustering = [], [], []
 
-            # Usando tqdm para mostrar a barra de progresso
-            with tqdm(total=len(img_paths), desc=f"Extraindo features para N={N}") as pbar:
-                if num_cores is None:
-                    num_cores = cpu_count()
-                with Pool(num_cores) as pool:
-                    results = pool.map(CN.extract_features, [cv2.imread(img_path, cv2.IMREAD_GRAYSCALE) for img_path in img_paths])
+            print(f"Iniciando extração de features para N={N}...")
+            results = Parallel(n_jobs=num_cores)(
+                delayed(CN.extract_features)(cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)) for img_path in img_paths
+            )
 
-                for d, f, c in results:
-                    degrees.append(d.T)
-                    forces.append(f.T)
-                    clustering.append(c.T)
-                    pbar.update(1)
+            for d, f, c in results:
+                degrees.append(d.T)
+                forces.append(f.T)
+                clustering.append(c.T)
+
+            print(f"Features extraídas para N={N}.")
 
             # Adicionando as características extraídas para essa configuração de N ao dicionário
             feature_data[N] = {
@@ -102,33 +100,29 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
             # Salvando o arquivo pickle após a extração de features para o threshold N
             save_data(fisher_vectors_dict, targets, feature_data, "feature_data")
 
-        with tqdm(total=len(d_ctrl_values) * len(f_ctrl_values) * len(c_ctrl_values) * len(k_values) - len(k_values),
-                  desc=f"Calculando Fisher Vectors para N={N}") as wbar:
-            for d_ctrl in d_ctrl_values:
-                for f_ctrl in f_ctrl_values:
-                    for c_ctrl in c_ctrl_values:
-                        if d_ctrl == 0 and f_ctrl == 0 and c_ctrl == 0:
-                            continue  # Pelo menos um dos controles deve ser 1
-                        for k in k_values:
-                            # Verificar se a combinação já foi processada
-                            if (d_ctrl, f_ctrl, c_ctrl, k, N) in fisher_vectors_dict:
-                                wbar.update(1)
-                                continue
+        print(f"Iniciando cálculo dos Fisher Vectors para N={N}...")
+        for d_ctrl in d_ctrl_values:
+            for f_ctrl in f_ctrl_values:
+                for c_ctrl in c_ctrl_values:
+                    if d_ctrl == 0 and f_ctrl == 0 and c_ctrl == 0:
+                        continue  # Pelo menos um dos controles deve ser 1
+                    for k in k_values:
+                        # Verificar se a combinação já foi processada
+                        if (d_ctrl, f_ctrl, c_ctrl, k, N) in fisher_vectors_dict:
+                            continue
 
-                            # Combinar as características de acordo com os parâmetros de controle
-                            CNFeatures = combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering)
+                        # Combinar as características de acordo com os parâmetros de controle
+                        CNFeatures = combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering)
 
-                            # Instanciando a classe FisherVectorEncoding
-                            fisher_encoding = FisherVectorEncoding(k)
+                        # Instanciando a classe FisherVectorEncoding
+                        fisher_encoding = FisherVectorEncoding(k)
 
-                            # Computando os Fisher Vectors
-                            fisher_vectors, _ = fisher_encoding.compute_fisher_vectors(CNFeatures, CNFeatures)
+                        # Computando os Fisher Vectors
+                        fisher_vectors, _ = fisher_encoding.compute_fisher_vectors(CNFeatures, CNFeatures)
 
-                            # Salvando os Fisher Vectors dessa combinação no dicionário
-                            fisher_vectors_dict[(d_ctrl, f_ctrl, c_ctrl, k, N)] = fisher_vectors
+                        # Salvando os Fisher Vectors dessa combinação no dicionário
+                        fisher_vectors_dict[(d_ctrl, f_ctrl, c_ctrl, k, N)] = fisher_vectors
 
-                            # Atualizando a barra de progresso
-                            wbar.update(1)
         # Salvando o arquivo pickle após o cálculo do Fisher Vector
         save_data(fisher_vectors_dict, targets, feature_data, "fisher_vectors")
 
@@ -209,15 +203,16 @@ def combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering):
     """
     combined_features = []
     for d, f, c in zip(degrees, forces, clustering):
-        features = []
+        feature_set = []
         if d_ctrl:
-            features.append(d)
+            feature_set.append(d)
         if f_ctrl:
-            features.append(f)
+            feature_set.append(f)
         if c_ctrl:
-            features.append(c)
-        combined_features.append(np.concatenate(features, axis=1))
+            feature_set.append(c)
+        combined_features.append(np.concatenate(feature_set, axis=0))
     return combined_features
 
 if __name__ == "__main__":
-    main()
+    num_cores = int(input("Digite o número de núcleos para processamento paralelo: "))
+    main(num_cores=num_cores)

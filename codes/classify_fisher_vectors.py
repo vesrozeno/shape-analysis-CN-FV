@@ -14,15 +14,25 @@ from sklearn.svm import LinearSVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import accuracy_score
 import numpy as np
-from tqdm import tqdm
 import csv
 import os
+from joblib import Parallel, delayed
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_portuguese.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
-results_csv = "results/results_portuguese.csv"  # Arquivo CSV para salvar os resultados
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_aforo.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+results_csv = "results/results_aforo.csv"  # Arquivo CSV para salvar os resultados
+n_jobs = -1  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 
 def main():
+    global n_jobs
+    
+    # Permitir que o usuário defina o número de núcleos a serem utilizados
+    try:
+        n_jobs = int(input("Digite o número de núcleos a serem utilizados (ou -1 para usar todos os núcleos disponíveis): "))
+    except ValueError:
+        print("Entrada inválida. Usando todos os núcleos disponíveis.")
+        n_jobs = -1
+
     # Lendo combinações já processadas
     processed_combinations = read_processed_combinations(results_csv)
     print(f"Número de combinações já processadas: {len(processed_combinations)}")
@@ -38,21 +48,16 @@ def main():
     print(f"Length of fisher_vectors: {len(fisher_vectors_dict)}")
     print(f"Length of targets: {len(targets)}")
 
-    # Executar a classificação para cada combinação de parâmetros com uma barra de progresso
-    with tqdm(total=len(fisher_vectors_dict), desc="Classificando combinações de parâmetros") as pbar:
-        for params, fisher_vectors in fisher_vectors_dict.items():
-            d_ctrl, f_ctrl, c_ctrl, k, N = params
+    # Executar a classificação para cada combinação de parâmetros sem barra de progresso
+    Parallel(n_jobs=n_jobs)(delayed(process_combination)(params, fisher_vectors, targets, processed_combinations) for params, fisher_vectors in fisher_vectors_dict.items())
 
-            # Verificando se a combinação já foi processada
-            if (d_ctrl, f_ctrl, c_ctrl, k, N) in processed_combinations:
-                pbar.update(1)  # Atualiza a barra de progresso mesmo para combinações já processadas
-                continue
+def process_combination(params, fisher_vectors, targets, processed_combinations):
+    d_ctrl, f_ctrl, c_ctrl, k, N = params
 
-            # Executar a validação do modelo
-            validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N)
-
-            # Atualizar a barra de progresso após a classificação de cada combinação
-            pbar.update(1)
+    # Verificando se a combinação já foi processada
+    if (d_ctrl, f_ctrl, c_ctrl, k, N) not in processed_combinations:
+        # Executar a validação do modelo
+        validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N)
 
 def read_processed_combinations(csv_file):
     processed_combinations = set()
