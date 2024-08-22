@@ -22,14 +22,14 @@ from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/teste/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_teste2.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/LeavesPortuguese/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_portuguese.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 memory_limit_mb = 5000  # Limite de memória em MB
 cpu_limit_percent = 90  # Limite de uso de CPU em porcentagem
 
 
 def main(num_cores):
-    pattern = os.path.join(image_directory, "*.png")
+    pattern = os.path.join(image_directory, "*.bmp")
 
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
     img_paths = glob.glob(pattern)
@@ -57,7 +57,7 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
     k_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
-    N_values = [30]
+    N_values = [40]
 
     # Verificando se já existem targets no arquivo
     if len(targets) < len(img_paths):
@@ -130,7 +130,7 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
         # Usando processamento paralelo para o cálculo dos Fisher Vectors
         if tasks:
             results = Parallel(n_jobs=num_cores)(
-                delayed(compute_fisher_vectors)(
+                delayed(fisher_vectors_with_resource_check)(
                     d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering
                 )
                 for d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering in tasks
@@ -151,6 +151,12 @@ def extract_features_with_resource_check(CN, img_path):
 
     return CN.extract_features(cv2.imread(img_path, cv2.IMREAD_GRAYSCALE))
 
+def fisher_vectors_with_resource_check(CN, img_path):
+    while not check_system_resources():
+        print("Aguardando recursos suficientes...")
+        time.sleep(5)
+
+    return compute_fisher_vectors
 
 def compute_fisher_vectors(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering):
     """
