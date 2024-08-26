@@ -11,7 +11,7 @@ import psutil
 import time
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_eth.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_eth2.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
 results_csv = "results/results_eth.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = -1  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
