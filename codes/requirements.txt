@@ -8,3 +8,5 @@ scikit-image
 pandas
 pytest-shutil
 psutil
+seaborn
+matplotlib
