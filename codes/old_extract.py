@@ -14,10 +14,10 @@ from tqdm import tqdm
 from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/fish_otolith/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_fish.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/SweedenLeaves/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_swee2.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 def main():
-    pattern = image_directory + "*.png"
+    pattern = image_directory + "*.bmp"
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
     img_paths = glob.glob(pattern)
     print(f"Número total de imagens encontradas: {len(img_paths)}")
@@ -39,7 +39,7 @@ def extract_and_save_fisher_vectors(img_paths):
     d_ctrl_values = [0, 1]
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
-    k_values = [4, 6, 8, 10, 14, 18, 22]
+    k_values = [14]
     N_values = [70]
 
     # Verificando se já existem targets no arquivo
