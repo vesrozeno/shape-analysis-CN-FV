@@ -9,7 +9,7 @@ import psutil
 import time
 
 # Variáveis para determinar os nomes de arquivos
-results_csv = "results/results_eth.csv"  # Arquivo CSV para salvar os resultados
+results_csv = "results/usp_rotated.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = -1  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
 cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
