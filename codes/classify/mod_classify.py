@@ -9,7 +9,7 @@ import psutil
 import time
 
 # Variáveis para determinar os nomes de arquivos
-results_csv = "results/usp_rotated.csv"  # Arquivo CSV para salvar os resultados
+results_csv = "results/usp_scaled.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = -1  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
 cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
@@ -37,8 +37,8 @@ def main():
         print(f"Entrada inválida. Usando o limite padrão de {cpu_limit_percent}%.")
 
     # Obter os caminhos dos arquivos de treino e teste
-    train_pkl = ""
-    test_pkl = ""
+    train_pkl = "pkl/usp_orig.pkl"
+    test_pkl = "pkl/usp_sca.pkl"
 
     # Lendo combinações já processadas
     processed_combinations = read_processed_combinations(results_csv)

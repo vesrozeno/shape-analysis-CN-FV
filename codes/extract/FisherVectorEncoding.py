@@ -39,7 +39,7 @@ class FisherVectorEncoding:
         if self.gmm is None:
             raise ValueError("GMM has not been trained. Call 'learn_gmm' first.")
         return np.array(
-            [fisher_vector(descriptor, self.gmm) for descriptor in descriptors]
+            [fisher_vector(descriptor, self.gmm, improved=True) for descriptor in descriptors]
         )
 
     def compute_fisher_vectors(self, train_descriptors, test_descriptors):
