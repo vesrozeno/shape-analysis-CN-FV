@@ -19,8 +19,8 @@ from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/Arquivo/Leaves256x256cr/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/usp_rotated.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/Leaves256x256c/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/usp_original.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 
 def main():
     pattern = image_directory + "*.png"
