@@ -1,28 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
 Script para extrair características de imagens usando Redes Complexas e Vetores de Fisher.
+
 Criado em: 21 Março 2024
 Autores: Lucas C. Ribas e Vitor Emanuel S. Rozeno
 """
+
 import os
 import numpy as np
 import glob
 import cv2
 import pickle
 from tqdm import tqdm
+
 from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
+
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/SweedenLeaves/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/fisher_vectors_and_targets_swee2.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/Arquivo/Leaves256x256cr/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/usp_rotated.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+
 def main():
-    pattern = image_directory + "*.bmp"
+    pattern = image_directory + "*.png"
+
     # Encontrando todos os caminhos de imagem que correspondem ao padrão
     img_paths = glob.glob(pattern)
     print(f"Número total de imagens encontradas: {len(img_paths)}")
+
     # Extração das características e cálculo dos Fisher Vectors
     extract_and_save_fisher_vectors(img_paths)
+
 def extract_and_save_fisher_vectors(img_paths):
     # Carregar dados existentes do arquivo .pkl, se disponível
     if os.path.exists(fisher_vectors_pkl):
@@ -35,12 +44,13 @@ def extract_and_save_fisher_vectors(img_paths):
         fisher_vectors_dict = {}
         targets = []
         feature_data = {}
+
     # Definindo as possíveis combinações de parâmetros
-    d_ctrl_values = [0, 1]
-    f_ctrl_values = [0, 1]
-    c_ctrl_values = [0, 1]
-    k_values = [14]
-    N_values = [70]
+    d_ctrl_values = [1]
+    f_ctrl_values = [1]
+    c_ctrl_values = [1]
+    k_values = [20]
+    N_values = [60]
 
     # Verificando se já existem targets no arquivo
     if len(targets) < len(img_paths):
@@ -50,11 +60,13 @@ def extract_and_save_fisher_vectors(img_paths):
         print(f"Targets atualizados: {len(targets)}")
     else:
         print(f"Targets já completos: {len(targets)}")
+
     # Loop sobre todas as combinações de parâmetros
     for N in N_values:
         # Valores de limiar para extração de características
         inc = 1 / N
         thresholding = np.arange(inc, 1, inc)
+
         # Instanciando a classe ComplexNetwork
         CN = ComplexNetwork(thresholding)
 
@@ -73,6 +85,7 @@ def extract_and_save_fisher_vectors(img_paths):
                     
                     # Calcular características para todos os thresholds
                     d, f, c = CN.extract_features(img)
+
                     degrees.append(d.T)
                     forces.append(f.T)
                     clustering.append(c.T)
@@ -88,7 +101,6 @@ def extract_and_save_fisher_vectors(img_paths):
 
             # Salvando o arquivo pickle após a extração de features para o threshold N
             save_data(fisher_vectors_dict, targets, feature_data)
-            save_data(fisher_vectors_dict, targets, feature_data, "feature_data")
 
         with tqdm(total=len(d_ctrl_values)*len(f_ctrl_values)*len(c_ctrl_values)*len(k_values)-len(k_values), 
                   desc=f"Calculando Fisher Vectors para N={N}") as wbar:
@@ -106,22 +118,24 @@ def extract_and_save_fisher_vectors(img_paths):
 
                             # Combinar as características de acordo com os parâmetros de controle
                             CNFeatures = combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering)
+
                             # Instanciando a classe FisherVectorEncoding
                             fisher_encoding = FisherVectorEncoding(k)
+
                             # Computando os Fisher Vectors
                             fisher_vectors, _ = fisher_encoding.compute_fisher_vectors(CNFeatures, CNFeatures)
+
                             # Salvando os Fisher Vectors dessa combinação no dicionário
                             fisher_vectors_dict[(d_ctrl, f_ctrl, c_ctrl, k, N)] = fisher_vectors
+
                             # Atualizando a barra de progresso
                             wbar.update(1)
             # Salvando o arquivo pickle após o cálculo do Fisher Vector
             save_data(fisher_vectors_dict, targets, feature_data)
-            save_data(fisher_vectors_dict, targets, feature_data, "fisher_vectors")
 
-def save_data(fisher_vectors_dict, targets, feature_data, changed_data):
+def save_data(fisher_vectors_dict, targets, feature_data):
     """
     Função para salvar os dados no arquivo pickle.
-    Função para salvar os dados no arquivo pickle se houver novas informações para salvar.
     """
     with open(fisher_vectors_pkl, "wb") as f:
         pickle.dump({
@@ -129,62 +143,12 @@ def save_data(fisher_vectors_dict, targets, feature_data, changed_data):
             "targets": targets,
             "feature_data": feature_data
         }, f)
-    print(f"Dados salvos em '{fisher_vectors_pkl}'.")
-    # Se o arquivo pickle não existir, cria um arquivo vazio
-    if not os.path.exists(fisher_vectors_pkl):
-        with open(fisher_vectors_pkl, "wb") as f:
-            pickle.dump({
-                "fisher_vectors": {},
-                "targets": [],
-                "feature_data": {}
-            }, f)
-
-    # Carregar dados anteriores do arquivo pickle
-    with open(fisher_vectors_pkl, "rb") as f:
-        existing_data = pickle.load(f)
-
-    # Verifica se há novos dados para salvar
-    if changed_data == "fisher_vectors":
-        if not dicts_are_equal(existing_data.get("fisher_vectors", {}), fisher_vectors_dict):
-            with open(fisher_vectors_pkl, "wb") as f:
-                pickle.dump({
-                    "fisher_vectors": fisher_vectors_dict,
-                    "targets": targets,
-                    "feature_data": feature_data
-                }, f)
-            print(f"Novos Fisher Vectors salvos em '{fisher_vectors_pkl}'.")
-    elif changed_data == "feature_data":
-        if not dicts_are_equal(existing_data.get("feature_data", {}), feature_data):
-            with open(fisher_vectors_pkl, "wb") as f:
-                pickle.dump({
-                    "fisher_vectors": fisher_vectors_dict,
-                    "targets": targets,
-                    "feature_data": feature_data
-                }, f)
-            print(f"Novos dados de features salvos em '{fisher_vectors_pkl}'.")
-
-def dicts_are_equal(dict1, dict2):
-    """
-    Compara dois dicionários que podem conter arrays do NumPy.
-    Retorna True se os dicionários forem iguais, caso contrário, False.
-    """
-    if dict1.keys() != dict2.keys():
-        return False
-    for key in dict1:
-        if isinstance(dict1[key], np.ndarray):
-            if not np.array_equal(dict1[key], dict2[key]):
-                return False
-        elif isinstance(dict1[key], dict):
-            if not dicts_are_equal(dict1[key], dict2[key]):
-                return False
-        else:
-            if dict1[key] != dict2[key]:
-                return False
-    return True
+    print(f"\nDados salvos em '{fisher_vectors_pkl}'.")
 
 def combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering):
     """
     Combina características conforme os parâmetros de controle.
+
     :param d_ctrl: Controle do grau
     :param f_ctrl: Controle da força
     :param c_ctrl: Controle do coeficiente de clustering
@@ -204,5 +168,6 @@ def combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering):
             features.append(c)
         combined_features.append(np.concatenate(features, axis=1))
     return combined_features
+
 if __name__ == "__main__":
     main()

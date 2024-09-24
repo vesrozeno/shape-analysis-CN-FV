@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 results_directory = "results/otolith/"
 
 # Parâmetros de filtro específicos
-selected_n_modes = 10
-selected_thre_inc = 40
+selected_n_modes = 20
+selected_thre_inc = 35
 
 # Listar todos os arquivos CSV no diretório de resultados
 csv_files = [f for f in os.listdir(results_directory) if f.endswith('.csv')]
@@ -67,4 +67,4 @@ results_df = results_df[ordered_columns]
 # Exibir a tabela
 print("\nTabela de acurácias do LDA e SVM para n_modes =", selected_n_modes, "e thre_inc =", selected_thre_inc)
 print(results_df)
-results_df.to_csv("/mnt/d/parameters/otolith_lda_accuracies_table.csv", index=False)
+results_df.to_csv("/mnt/d/parameters/oto3520_lda_accuracies_table.csv", index=False)

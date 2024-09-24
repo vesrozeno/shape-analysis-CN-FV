@@ -13,11 +13,11 @@ def main():
     df = pd.read_csv(file_path)
 
     # Filtrar os dados onde d, f e c são iguais a 1
-    df_filtered = df[(df['d'] == 1) & (df['f'] == 0) & (df['c'] == 0)]
+    df_filtered = df[(df['d'] == 1) & (df['f'] == 1) & (df['c'] == 1)]
 
     # Verificações para thre_inc e n_modes
-    thre_inc_values = [10, 20, 30, 40, 50, 60, 70]
-    n_modes_values = [4, 6, 8, 10, 14, 18, 22]
+    thre_inc_values = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]
+    n_modes_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
 
     # Filtrar as colunas 'thre_inc' e 'n_modes' com os valores desejados
     df_filtered = df_filtered[df_filtered['thre_inc'].isin(thre_inc_values)]
@@ -44,28 +44,28 @@ def main():
 
 def combined(df_filtered):
     # Criar uma nova coluna 'avg_acc' que é a média entre 'svm_acc' e 'lda_acc'
-        df_filtered['avg_acc'] = df_filtered[['svm_acc', 'lda_acc']].mean(axis=1)
+    df_filtered['avg_acc'] = df_filtered[['svm_acc', 'lda_acc']].mean(axis=1)
 
-        # Criar uma tabela de texto que combina acc_svm e acc_lda
-        df_filtered['combined_acc'] = df_filtered.apply(
-            lambda row: f"SVM: {row['svm_acc']:.2f}\nLDA: {row['lda_acc']:.2f}", axis=1)
+    # Criar uma tabela de texto que combina acc_svm e acc_lda formatados como porcentagem
+    df_filtered['combined_acc'] = df_filtered.apply(
+        lambda row: f"{row['lda_acc'] * 100:.1f}\n{row['svm_acc'] * 100:.1f}", axis=1)
 
-        # Criar tabela pivô para o heatmap (usando avg_acc para colorir o heatmap)
-        heatmap_data_avg = df_filtered.pivot(index="n_modes", columns="thre_inc", values="avg_acc")
+    # Criar tabela pivô para o heatmap (usando avg_acc para colorir o heatmap)
+    heatmap_data_avg = df_filtered.pivot(index="n_modes", columns="thre_inc", values="avg_acc")
 
-        # Criar tabela manual para exibir os textos (SVM e LDA)
-        heatmap_data_text = df_filtered.pivot(index="n_modes", columns="thre_inc", values="combined_acc")
+    # Criar tabela manual para exibir os textos (SVM e LDA)
+    heatmap_data_text = df_filtered.pivot(index="n_modes", columns="thre_inc", values="combined_acc")
 
-        # Criar o heatmap, mas usando avg_acc para a coloração
-        plt.figure(figsize=(10, 6))
-        sns.heatmap(heatmap_data_avg, annot=heatmap_data_text.values, fmt='', cmap="YlGnBu", 
-                        cbar_kws={'label': 'Acc Média (SVM & LDA)'})
+    # Criar o heatmap, mas usando avg_acc para a coloração
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(heatmap_data_avg, annot=heatmap_data_text.values, fmt='', cmap="YlGnBu", 
+                cbar_kws={'label': 'Acc Média (SVM & LDA)'})
 
-        # Ajustar título e rótulos dos eixos
-        plt.title("Heatmap SVM & LDA Acc Média - (Grau) - {}".format(legenda))
-        plt.xlabel("Limiares")
-        plt.ylabel("K Gaussianas")
-        plt.savefig('/mnt/d/{}/comb_hm_{}.png'.format(dataset, dataset))
+    # Ajustar título e rótulos dos eixos
+    plt.title("Heatmap SVM & LDA Acc Média - (Grau) - {}".format(legenda))
+    plt.xlabel("Limiares")
+    plt.ylabel("K Gaussianas")
+    plt.savefig('/mnt/d/{}/comb_hm_{}.png'.format(dataset, dataset))
 
 def svm(df_filtered):
     # Pivotar os dados para criar o formato de heatmap
@@ -73,7 +73,7 @@ def svm(df_filtered):
 
     # Criar o heatmap
     plt.figure(figsize=(10, 6))
-    sns.heatmap(heatmap_data, annot=True, cmap="YlGnBu", cbar_kws={'label': 'SVM Acc'})
+    sns.heatmap(heatmap_data * 100, annot=True, fmt=".1f", cmap="YlGnBu", cbar_kws={'label': 'SVM Acc (%)'})
     plt.title("Heatmap SVM Acc - (Grau) - {}".format(legenda))
     plt.xlabel("Limiares")
     plt.ylabel("K Gaussianas")
@@ -85,12 +85,11 @@ def lda(df_filtered):
 
     # Criar o heatmap
     plt.figure(figsize=(10, 6))
-    sns.heatmap(heatmap_data, annot=True, cmap="YlGnBu", cbar_kws={'label': 'LDA Acc'})
+    sns.heatmap(heatmap_data * 100, annot=True, fmt=".1f", cmap="YlGnBu", cbar_kws={'label': 'LDA Acc (%)'})
     plt.title("Heatmap LDA Acc - (Grau) - {}".format(legenda))
     plt.xlabel("Limiares")
     plt.ylabel("K Gaussianas")
     plt.savefig('/mnt/d/{}/lda_hm_{}.png'.format(dataset, dataset))
 
 if __name__ == '__main__':
-     
-     main()
+    main()
