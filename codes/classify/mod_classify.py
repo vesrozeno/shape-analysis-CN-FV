@@ -10,7 +10,7 @@ import time
 
 # Variáveis para determinar os nomes de arquivos
 results_csv = "results/usp_scaled.csv"  # Arquivo CSV para salvar os resultados
-n_jobs = -1  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
+n_jobs = 8  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
 cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
 
@@ -22,7 +22,7 @@ def main():
         n_jobs = int(input("Digite o número de núcleos a serem utilizados (ou -1 para usar todos os núcleos disponíveis): "))
     except ValueError:
         print("Entrada inválida. Usando todos os núcleos disponíveis.")
-        n_jobs = -1
+    n_jobs = 8
     
     # Permitir que o usuário defina o limite de memória
     try:
