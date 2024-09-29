@@ -17,27 +17,28 @@ import shutil
 import psutil
 from joblib import Parallel, delayed
 import time
+import gc  # Para coleta de lixo manual
 
 from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Variáveis para determinar o nome do arquivo pickle e do dataset
 image_directory = "datasets/eth80/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/eth6020.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+fisher_vectors_pkl = "pkl/ethVAI.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 memory_limit_mb = 5000  # Limite de memória em MB
 cpu_limit_percent = 90  # Limite de uso de CPU em porcentagem
 
 
 def main(num_cores):
     pattern = os.path.join(image_directory, "*.png")
-
-    # Encontrando todos os caminhos de imagem que correspondem ao padrão
     img_paths = glob.glob(pattern)
     print(f"Número total de imagens encontradas: {len(img_paths)}")
 
     # Extração das características e cálculo dos Fisher Vectors
     extract_and_save_fisher_vectors(img_paths, num_cores)
 
+    # Forçar coleta de lixo no final da execução
+    clear_memory()
 
 def extract_and_save_fisher_vectors(img_paths, num_cores):
     # Carregar dados existentes do arquivo .pkl, se disponível
@@ -57,7 +58,7 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
     k_values = [4, 8, 10, 14, 18, 20, 24]
-    N_values = [35, 45, 60, 70]
+    N_values = [45, 60, 70]
 
     # Verificando se já existem targets no arquivo
     if len(targets) < len(img_paths):
@@ -148,15 +149,29 @@ def extract_features_with_resource_check(CN, img_path):
     while not check_system_resources():
         print("\r\033[KAguardando recursos suficientes...", end="")
         time.sleep(5)
+    
+    # Leitura da imagem com OpenCV
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    
+    # Extração das características
+    features = CN.extract_features(img)
+    
+    # Após extração, forçar coleta de lixo
+    clear_memory()
 
-    return CN.extract_features(cv2.imread(img_path, cv2.IMREAD_GRAYSCALE))
+    return features
 
 def fisher_vectors_with_resource_check(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering):
     while not check_system_resources():
         print("\r\033[KAguardando recursos suficientes...", end="")
         time.sleep(5)
 
-    return compute_fisher_vectors(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering)
+    fisher_vectors = compute_fisher_vectors(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering)
+
+    # Forçar coleta de lixo após cálculo pesado
+    clear_memory()
+
+    return fisher_vectors
 
 def compute_fisher_vectors(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, clustering):
     """
@@ -224,7 +239,8 @@ def save_data(fisher_vectors_dict, targets, feature_data, changed_data):
                     f,
                 )
             print(f"Novos dados de features salvos em '{fisher_vectors_pkl}'.")
-
+    # Força a coleta de lixo após salvar os dados
+    clear_memory()
 
 def dicts_are_equal(dict1, dict2):
     """
@@ -272,9 +288,6 @@ def combine_features(d_ctrl, f_ctrl, c_ctrl, degrees, forces, clustering):
 
 
 def check_system_resources():
-    """
-    Verifica o uso de memória e CPU e retorna True se os recursos estiverem dentro dos limites.
-    """
     memory_usage = psutil.virtual_memory().used / (1024 ** 2)  # Em MB
     cpu_usage = psutil.cpu_percent(interval=1)
 
@@ -282,12 +295,21 @@ def check_system_resources():
 
     if memory_usage < memory_limit_mb and cpu_usage < cpu_limit_percent:
         return True
+    
+    # Limpar recursos quando a memória está sendo usada demais
+    clear_memory()
+    
     return False
 
+def clear_memory():
+    """
+    Força a coleta de lixo e libera memória após grandes operações.
+    """
+    gc.collect()
+    print("\r\033[KMemória liberada com a coleta de lixo.", end="")
 
 if __name__ == "__main__":
     num_cores = int(input("Digite o número de núcleos para processamento paralelo: "))
-    num_cores = 8
     memory_limit_mb = int(input("Digite o limite de memória em MB: "))
     cpu_limit_percent = int(input("Digite o percentual máximo de uso da CPU: "))
     main(num_cores=num_cores)
