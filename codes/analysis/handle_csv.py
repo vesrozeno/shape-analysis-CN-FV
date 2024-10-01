@@ -6,8 +6,8 @@ dataset = input("Dataset: ")
 legenda = input("Legenda: ")
 
 # Ler o arquivo CSV
-file_path = "results/results_{}.csv".format(dataset)  # Coloque o caminho correto do seu arquivo CSV
-
+file_path = "results/generic/{}.csv".format(dataset)  # Coloque o caminho correto do seu arquivo CSV
+sns.set(font_scale=1.25)
 def main():
     sair = 0
     df = pd.read_csv(file_path)
@@ -16,8 +16,8 @@ def main():
     df_filtered = df[(df['d'] == 1) & (df['f'] == 1) & (df['c'] == 1)]
 
     # Verificações para thre_inc e n_modes
-    thre_inc_values = [10, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]
-    n_modes_values = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+    thre_inc_values = [10, 20, 35, 45, 60, 70]
+    n_modes_values = [4, 8, 10, 14, 18, 20, 24]
 
     # Filtrar as colunas 'thre_inc' e 'n_modes' com os valores desejados
     df_filtered = df_filtered[df_filtered['thre_inc'].isin(thre_inc_values)]
@@ -48,7 +48,7 @@ def combined(df_filtered):
 
     # Criar uma tabela de texto que combina acc_svm e acc_lda formatados como porcentagem
     df_filtered['combined_acc'] = df_filtered.apply(
-        lambda row: f"{row['lda_acc'] * 100:.1f}\n{row['svm_acc'] * 100:.1f}", axis=1)
+        lambda row: f"{row['lda_acc'] * 100:.2f}\n{row['svm_acc'] * 100:.2f}", axis=1)
 
     # Criar tabela pivô para o heatmap (usando avg_acc para colorir o heatmap)
     heatmap_data_avg = df_filtered.pivot(index="n_modes", columns="thre_inc", values="avg_acc")
@@ -58,14 +58,14 @@ def combined(df_filtered):
 
     # Criar o heatmap, mas usando avg_acc para a coloração
     plt.figure(figsize=(10, 6))
-    sns.heatmap(heatmap_data_avg, annot=heatmap_data_text.values, fmt='', cmap="YlGnBu", 
-                cbar_kws={'label': 'Acc Média (SVM & LDA)'})
+    ax = sns.heatmap(heatmap_data_avg, annot=heatmap_data_text.values, fmt='', cmap="YlGnBu")
+    ax.xaxis.set_ticks_position('top')  # Mover os ticks para o topo
+    ax.xaxis.set_label_position('top')  # Mover o rótulo para o topo
 
     # Ajustar título e rótulos dos eixos
-    plt.title("Heatmap SVM & LDA Acc Média - (Grau) - {}".format(legenda))
-    plt.xlabel("Limiares")
+    plt.xlabel("N Limiares")
     plt.ylabel("K Gaussianas")
-    plt.savefig('/mnt/d/{}/comb_hm_{}.png'.format(dataset, dataset))
+    plt.savefig('/mnt/d/heatmaps/comb_hm_{}.png'.format(dataset, dataset))
 
 def svm(df_filtered):
     # Pivotar os dados para criar o formato de heatmap
@@ -73,11 +73,13 @@ def svm(df_filtered):
 
     # Criar o heatmap
     plt.figure(figsize=(10, 6))
-    sns.heatmap(heatmap_data * 100, annot=True, fmt=".1f", cmap="YlGnBu", cbar_kws={'label': 'SVM Acc (%)'})
-    plt.title("Heatmap SVM Acc - (Grau) - {}".format(legenda))
-    plt.xlabel("Limiares")
+    ax = sns.heatmap(heatmap_data * 100, annot=True, fmt=".2f", cmap="YlGnBu")
+    ax.xaxis.set_ticks_position('top')  # Mover os ticks para o topo
+    ax.xaxis.set_label_position('top')  # Mover o rótulo para o topo
+
+    plt.xlabel("N Limiares")
     plt.ylabel("K Gaussianas")
-    plt.savefig('/mnt/d/{}/svm_hm_{}.png'.format(dataset, dataset))
+    plt.savefig('/mnt/d/heatmaps/svm_hm_{}.png'.format(dataset, dataset))
 
 def lda(df_filtered):
     # Pivotar os dados para criar o formato de heatmap
@@ -85,11 +87,13 @@ def lda(df_filtered):
 
     # Criar o heatmap
     plt.figure(figsize=(10, 6))
-    sns.heatmap(heatmap_data * 100, annot=True, fmt=".1f", cmap="YlGnBu", cbar_kws={'label': 'LDA Acc (%)'})
-    plt.title("Heatmap LDA Acc - (Grau) - {}".format(legenda))
-    plt.xlabel("Limiares")
+    ax = sns.heatmap(heatmap_data * 100, annot=True, fmt=".2f", cmap="YlGnBu")
+    ax.xaxis.set_ticks_position('top')  # Mover os ticks para o topo
+    ax.xaxis.set_label_position('top')  # Mover o rótulo para o topo
+
+    plt.xlabel("N Limiares")
     plt.ylabel("K Gaussianas")
-    plt.savefig('/mnt/d/{}/lda_hm_{}.png'.format(dataset, dataset))
+    plt.savefig('/mnt/d/heatmaps/lda_hm_{}.png'.format(dataset, dataset))
 
 if __name__ == '__main__':
     main()
