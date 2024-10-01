@@ -23,14 +23,14 @@ from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/eth80/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/ethF.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/testess/noi/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/noi.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 memory_limit_mb = 5000  # Limite de memória em MB
 cpu_limit_percent = 90  # Limite de uso de CPU em porcentagem
 
 
 def main(num_cores):
-    pattern = os.path.join(image_directory, "*.png")
+    pattern = os.path.join(image_directory, "*n1.png")
     img_paths = glob.glob(pattern)
     print(f"Número total de imagens encontradas: {len(img_paths)}")
 
@@ -72,7 +72,7 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
             print(f"\r\033[K{parts[0]}_{parts[1]}", end="")
         print(f"Targets e samples atualizados: {len(targets)}")
     else:
-        print(f"Targets e samplesjá completos: {len(targets)}")
+        print(f"Targets e samples já completos: {len(targets)}")
 
     # Loop sobre todas as combinações de parâmetros
     for N in N_values:
@@ -115,7 +115,7 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
             }
 
             # Salvando o arquivo pickle após a extração de features para o threshold N
-            save_data(fisher_vectors_dict, targets, feature_data, "feature_data")
+            save_data(fisher_vectors_dict, targets, samples, feature_data, "feature_data")
 
         print(f"Iniciando cálculo dos Fisher Vectors para N={N}...")
 
@@ -147,7 +147,7 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
                 fisher_vectors_dict[(d_ctrl, f_ctrl, c_ctrl, k, N)] = fisher_vectors
 
         # Salvando o arquivo pickle após o cálculo do Fisher Vector
-        save_data(fisher_vectors_dict, targets, feature_data, "fisher_vectors")
+        save_data(fisher_vectors_dict, targets, samples, feature_data, "fisher_vectors")
 
 
 def extract_features_with_resource_check(CN, img_path):

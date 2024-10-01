@@ -12,8 +12,8 @@ import psutil
 import time
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/ethF.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
-results_csv = "results/results_eth.csv"  # Arquivo CSV para salvar os resultados
+fisher_vectors_pkl = "pkl/noi.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+results_csv = "results/results_noi.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = 8  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
 cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
@@ -74,7 +74,8 @@ def process_combination(params, fisher_vectors, targets, samples, processed_comb
             time.sleep(5)  # Aguarde 5 segundos antes de verificar novamente
 
         # Executar a validação do modelo
-        validate_model(fisher_vectors, targets, samples, d_ctrl, f_ctrl, c_ctrl, k, N)
+        #validate_model(fisher_vectors, targets, samples, d_ctrl, f_ctrl, c_ctrl, k, N)
+        validate_model_leave_one_out(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N)
 
 def read_processed_combinations(csv_file):
     processed_combinations = set()
