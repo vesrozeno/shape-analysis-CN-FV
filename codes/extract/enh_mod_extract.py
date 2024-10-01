@@ -47,27 +47,32 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
             existing_data = pickle.load(f)
             fisher_vectors_dict = existing_data.get("fisher_vectors", {})
             targets = existing_data.get("targets", [])
+            samples = existing_data.get("samples", [])
             feature_data = existing_data.get("feature_data", {})
     else:
         fisher_vectors_dict = {}
         targets = []
+        samples = []
         feature_data = {}
 
     # Definindo as possíveis combinações de parâmetros
     d_ctrl_values = [0, 1]
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
-    k_values = [4, 8, 10, 14, 18, 20, 24]
-    N_values = [45, 60, 70]
+    k_values = [20]
+    N_values = [60]
 
     # Verificando se já existem targets no arquivo
     if len(targets) < len(img_paths):
         # Extraindo os rótulos da imagem a partir do nome do arquivo
         for img_path in img_paths[len(targets):]:
             targets.append(os.path.basename(img_path).split("_")[0])
-        print(f"Targets atualizados: {len(targets)}")
+            parts = os.path.basename(img_path).split('_')
+            samples.append(f"{parts[0]}_{parts[1]}")
+            print(f"\r\033[K{parts[0]}_{parts[1]}", end="")
+        print(f"Targets e samples atualizados: {len(targets)}")
     else:
-        print(f"Targets já completos: {len(targets)}")
+        print(f"Targets e samplesjá completos: {len(targets)}")
 
     # Loop sobre todas as combinações de parâmetros
     for N in N_values:
@@ -192,7 +197,7 @@ def compute_fisher_vectors(d_ctrl, f_ctrl, c_ctrl, k, N, degrees, forces, cluste
     return (d_ctrl, f_ctrl, c_ctrl, k, N), fisher_vectors
 
 
-def save_data(fisher_vectors_dict, targets, feature_data, changed_data):
+def save_data(fisher_vectors_dict, targets, samples, feature_data, changed_data):
     """
     Função para salvar os dados no arquivo pickle se houver novas informações para salvar.
     Cria um backup do arquivo existente antes de sobrescrevê-lo.
@@ -222,6 +227,7 @@ def save_data(fisher_vectors_dict, targets, feature_data, changed_data):
                     {
                         "fisher_vectors": fisher_vectors_dict,
                         "targets": targets,
+                        "samples": samples,
                         "feature_data": feature_data,
                     },
                     f,
@@ -234,6 +240,7 @@ def save_data(fisher_vectors_dict, targets, feature_data, changed_data):
                     {
                         "fisher_vectors": fisher_vectors_dict,
                         "targets": targets,
+                        "samples": samples,
                         "feature_data": feature_data,
                     },
                     f,
