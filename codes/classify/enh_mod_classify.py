@@ -2,6 +2,7 @@ import pickle
 from sklearn.model_selection import StratifiedKFold
 from sklearn.svm import LinearSVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import accuracy_score
 import numpy as np
 import csv
@@ -49,18 +50,20 @@ def main():
         data = pickle.load(f)
     fisher_vectors_dict = data["fisher_vectors"]
     targets = data["targets"]
+    samples = data["samples"]
 
     print("Fisher Vectors e rótulos carregados com sucesso.\n")
     print(f"Length of fisher_vectors: {len(fisher_vectors_dict)}")
     print(f"Length of targets: {len(targets)}")
+    print(f"Length of samples: {len(samples)}")
 
     # Executar a classificação para cada combinação de parâmetros sem barra de progresso
     Parallel(n_jobs=get_adjusted_n_jobs())(
-        delayed(process_combination)(params, fisher_vectors, targets, processed_combinations) 
+        delayed(process_combination)(params, fisher_vectors, targets, samples, processed_combinations) 
         for params, fisher_vectors in fisher_vectors_dict.items()
     )
 
-def process_combination(params, fisher_vectors, targets, processed_combinations):
+def process_combination(params, fisher_vectors, targets, samples, processed_combinations):
     d_ctrl, f_ctrl, c_ctrl, k, N = params
 
     # Verificando se a combinação já foi processada
@@ -71,7 +74,7 @@ def process_combination(params, fisher_vectors, targets, processed_combinations)
             time.sleep(5)  # Aguarde 5 segundos antes de verificar novamente
 
         # Executar a validação do modelo
-        validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N)
+        validate_model(fisher_vectors, targets, samples, d_ctrl, f_ctrl, c_ctrl, k, N)
 
 def read_processed_combinations(csv_file):
     processed_combinations = set()
@@ -90,22 +93,25 @@ def read_processed_combinations(csv_file):
             print(f"Erro ao ler o arquivo CSV: {e}")
     return processed_combinations
 
-def validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N):
-
-    # Verifique o número de amostras na menor classe
-    min_class_count = min([targets.count(t) for t in set(targets)])
-    n_splits = min(10, min_class_count)  # Ajuste n_splits para evitar o erro
-
-    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+def validate_model(fisher_vectors, targets, samples, d_ctrl, f_ctrl, c_ctrl, k, N):
 
     svm_accuracies = []
     lda_accuracies = []
 
-    for fold, (train_index, test_index) in enumerate(skf.split(fisher_vectors, targets), 1):
-        train_fvs = [fisher_vectors[i] for i in train_index]
-        test_fvs = [fisher_vectors[i] for i in test_index]
-        train_targets = [targets[i] for i in train_index]
-        test_targets = [targets[i] for i in test_index]
+    # Itera sobre todas as amostras, usando cada uma delas como conjunto de teste
+    unique_samples = set(samples)
+    for sample in unique_samples:
+        print(f"\r\033[KProcessando amostra: {sample}", end="")
+
+        # Conjunto de teste: todas as imagens que pertencem à mesma amostra
+        test_indices = [i for i, s in enumerate(samples) if s == sample]
+        training_indices = [i for i in range(len(samples)) if i not in test_indices]
+
+        # Separando vetores de treino e teste
+        train_fvs = [fisher_vectors[i] for i in training_indices]
+        test_fvs = [fisher_vectors[i] for i in test_indices]
+        train_targets = [targets[i] for i in training_indices]
+        test_targets = [targets[i] for i in test_indices]
 
         # Treinando SVM
         svm = LinearSVC(random_state=42, max_iter=10000, dual="auto")
@@ -121,6 +127,7 @@ def validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N):
         lda_accuracy = accuracy_score(test_targets, predictions_lda)
         lda_accuracies.append(lda_accuracy)
 
+    # Calculando as métricas de desempenho
     svm_mean_accuracy = np.mean(svm_accuracies)
     svm_std_accuracy = np.std(svm_accuracies)
     lda_mean_accuracy = np.mean(lda_accuracies)
@@ -128,6 +135,41 @@ def validate_model(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N):
 
     save_results(d_ctrl, f_ctrl, c_ctrl, N, k, len(fisher_vectors[0]), svm_mean_accuracy, svm_std_accuracy, lda_mean_accuracy, lda_std_accuracy)
 
+def validate_model_leave_one_out(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl, k, N):
+    loo = LeaveOneOut()
+
+    svm_accuracies = []
+    lda_accuracies = []
+
+    # Realiza o Leave-One-Out
+    for train_index, test_index in loo.split(fisher_vectors):
+        train_fvs = [fisher_vectors[i] for i in train_index]
+        test_fv = [fisher_vectors[i] for i in test_index]  # Apenas uma amostra de teste
+        train_targets = [targets[i] for i in train_index]
+        test_target = [targets[i] for i in test_index]  # Apenas um alvo de teste
+
+        # Treinando SVM
+        svm = LinearSVC(random_state=42, max_iter=10000, dual="auto")
+        svm.fit(train_fvs, train_targets)
+        predictions_svm = svm.predict(test_fv)
+        svm_accuracy = accuracy_score(test_target, predictions_svm)
+        svm_accuracies.append(svm_accuracy)
+
+        # Treinando LDA
+        lda = LinearDiscriminantAnalysis(solver="eigen", store_covariance=True, shrinkage="auto")
+        lda.fit(train_fvs, train_targets)
+        predictions_lda = lda.predict(test_fv)
+        lda_accuracy = accuracy_score(test_target, predictions_lda)
+        lda_accuracies.append(lda_accuracy)
+
+    # Calculando as métricas de desempenho
+    svm_mean_accuracy = np.mean(svm_accuracies)
+    svm_std_accuracy = np.std(svm_accuracies)
+    lda_mean_accuracy = np.mean(lda_accuracies)
+    lda_std_accuracy = np.std(lda_accuracies)
+
+    save_results(d_ctrl, f_ctrl, c_ctrl, N, k, len(fisher_vectors[0]), svm_mean_accuracy, svm_std_accuracy, lda_mean_accuracy, lda_std_accuracy)
+    
 def save_results(d_ctrl, f_ctrl, c_ctrl, N, k, num_fisher_vectors, svm_mean_accuracy, svm_std_accuracy, lda_mean_accuracy, lda_std_accuracy):
     with open(results_csv, mode="a", newline="") as csvfile:
         fieldnames = ["d", "f", "c", "thre_inc", "n_modes", "n_fvs", "svm_acc", "svm_std", "lda_acc", "lda_std"]
