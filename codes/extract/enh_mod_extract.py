@@ -23,14 +23,14 @@ from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/testess/noi/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/noi.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/Arquivo/Leaves256x256cn/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/cn.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 memory_limit_mb = 5000  # Limite de memória em MB
 cpu_limit_percent = 90  # Limite de uso de CPU em porcentagem
 
 
 def main(num_cores):
-    pattern = os.path.join(image_directory, "*n1.png")
+    pattern = os.path.join(image_directory, "*.png")
     img_paths = glob.glob(pattern)
     print(f"Número total de imagens encontradas: {len(img_paths)}")
 
@@ -56,9 +56,9 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
         feature_data = {}
 
     # Definindo as possíveis combinações de parâmetros
-    d_ctrl_values = [0, 1]
-    f_ctrl_values = [0, 1]
-    c_ctrl_values = [0, 1]
+    d_ctrl_values = [1]
+    f_ctrl_values = [1]
+    c_ctrl_values = [1]
     k_values = [20]
     N_values = [60]
 
