@@ -23,8 +23,8 @@ from ComplexNetwork import ComplexNetwork
 from FisherVectorEncoding import FisherVectorEncoding
 
 # Variáveis para determinar o nome do arquivo pickle e do dataset
-image_directory = "datasets/eth80/"  # Caminho do diretório contendo as imagens
-fisher_vectors_pkl = "pkl/ethF.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
+image_directory = "datasets/Leaves256x256c/"  # Caminho do diretório contendo as imagens
+fisher_vectors_pkl = "pkl/leaves70.pkl"  # Nome do arquivo pkl para salvar os Fisher Vectors e rótulos
 memory_limit_mb = 5000  # Limite de memória em MB
 cpu_limit_percent = 90  # Limite de uso de CPU em porcentagem
 
@@ -57,8 +57,8 @@ def extract_and_save_fisher_vectors(img_paths, num_cores):
     d_ctrl_values = [0, 1]
     f_ctrl_values = [0, 1]
     c_ctrl_values = [0, 1]
-    k_values = [4, 8, 10, 14, 18, 20, 24]
-    N_values = [45, 60, 70]
+    k_values = [24]
+    N_values = [70]
 
     # Verificando se já existem targets no arquivo
     if len(targets) < len(img_paths):

@@ -12,8 +12,8 @@ import psutil
 import time
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/noi.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
-results_csv = "results/results_noi.csv"  # Arquivo CSV para salvar os resultados
+fisher_vectors_pkl = "pkl/n1.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+results_csv = "results/results_n1.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = 8  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
 cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
@@ -55,13 +55,14 @@ def main():
     print("Fisher Vectors e rótulos carregados com sucesso.\n")
     print(f"Length of fisher_vectors: {len(fisher_vectors_dict)}")
     print(f"Length of targets: {len(targets)}")
-    print(f"Length of samples: {len(samples)}")
 
     # Executar a classificação para cada combinação de parâmetros sem barra de progresso
-    Parallel(n_jobs=get_adjusted_n_jobs())(
-        delayed(process_combination)(params, fisher_vectors, targets, samples, processed_combinations) 
-        for params, fisher_vectors in fisher_vectors_dict.items()
-    )
+    # Parallel(n_jobs=get_adjusted_n_jobs())(
+    #     delayed(process_combination)(params, fisher_vectors, targets, samples, processed_combinations) 
+    #     for params, fisher_vectors in fisher_vectors_dict.items()
+    # )
+    for params, fisher_vectors in fisher_vectors_dict.items():
+        process_combination(params, fisher_vectors, targets, samples, processed_combinations)
 
 def process_combination(params, fisher_vectors, targets, samples, processed_combinations):
     d_ctrl, f_ctrl, c_ctrl, k, N = params
@@ -101,6 +102,7 @@ def validate_model(fisher_vectors, targets, samples, d_ctrl, f_ctrl, c_ctrl, k, 
 
     # Itera sobre todas as amostras, usando cada uma delas como conjunto de teste
     unique_samples = set(samples)
+    print(f"Length of samples: {len(unique_samples)}")
     for sample in unique_samples:
         print(f"\r\033[KProcessando amostra: {sample}", end="")
 
@@ -170,7 +172,7 @@ def validate_model_leave_one_out(fisher_vectors, targets, d_ctrl, f_ctrl, c_ctrl
     lda_std_accuracy = np.std(lda_accuracies)
 
     save_results(d_ctrl, f_ctrl, c_ctrl, N, k, len(fisher_vectors[0]), svm_mean_accuracy, svm_std_accuracy, lda_mean_accuracy, lda_std_accuracy)
-    
+
 def save_results(d_ctrl, f_ctrl, c_ctrl, N, k, num_fisher_vectors, svm_mean_accuracy, svm_std_accuracy, lda_mean_accuracy, lda_std_accuracy):
     with open(results_csv, mode="a", newline="") as csvfile:
         fieldnames = ["d", "f", "c", "thre_inc", "n_modes", "n_fvs", "svm_acc", "svm_std", "lda_acc", "lda_std"]
