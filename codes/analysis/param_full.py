@@ -1,0 +1,80 @@
+import os
+import pandas as pd
+
+# Caminho da pasta base que contém os arquivos CSV
+results_directory = "results/all/"
+
+# Listas de parâmetros para combinar
+n_modes_list = [4, 8, 10, 14, 18, 18, 20, 24]  # Exemplo de diferentes n_modes
+thre_inc_list = [10, 20, 35, 45, 60, 70]  # Exemplo de diferentes thre_inc
+
+# Listar todos os arquivos CSV no diretório de resultados
+csv_files = [f for f in os.listdir(results_directory) if f.endswith('.csv')]
+
+# Dicionário para armazenar as combinações de (n_modes, thre_inc, d, f, c) e as acurácias de cada arquivo
+results_dict = {}
+
+# Iterar sobre cada arquivo CSV e coletar os dados
+for csv_file in csv_files:
+    # Extrair o nome do arquivo sem a extensão .csv
+    file_name = os.path.splitext(csv_file)[0]
+    
+    file_path = os.path.join(results_directory, csv_file)
+    df = pd.read_csv(file_path)
+    
+    # Iterar sobre cada combinação de n_modes e thre_inc
+    for n_modes in n_modes_list:
+        for thre_inc in thre_inc_list:
+            # Filtrar com base em n_modes e thre_inc específicos
+            df_filtered = df[(df['n_modes'] == n_modes) & (df['thre_inc'] == thre_inc)]
+            
+            # Iterar sobre as linhas filtradas e adicionar os dados ao dicionário
+            for _, row in df_filtered.iterrows():
+                d = row['d']
+                f = row['f']
+                c = row['c']
+                lda_acc = row['lda_acc']
+                lda_std = row['lda_std']
+                svm_acc = row['svm_acc']
+                svm_std = row['svm_std']
+                
+                # Chave baseada na combinação (n_modes, thre_inc, d, f, c)
+                key = (n_modes, thre_inc, d, f, c)
+                
+                # Se a chave não existir no dicionário, inicializa uma nova lista
+                if key not in results_dict:
+                    results_dict[key] = {}
+                
+                # Adiciona as acurácias LDA e SVM para o arquivo CSV atual, usando o nome do arquivo como chave
+                results_dict[key][f"{file_name}_lda"] = lda_acc
+                results_dict[key][f"{file_name}_ldastd"] = lda_std
+                results_dict[key][f"{file_name}_svm"] = svm_acc
+                results_dict[key][f"{file_name}_svmstd"] = svm_std
+
+# Criar um DataFrame para organizar a tabela
+rows = []
+for key, acc_dict in results_dict.items():
+    n_modes, thre_inc, d, f, c = key
+    row = {'n_modes': n_modes, 'thre_inc': thre_inc, 'd': d, 'f': f, 'c': c}
+    
+    # Adicionar as acurácias com base no nome do arquivo
+    row.update(acc_dict)
+    
+    # Adicionar a linha à lista de linhas
+    rows.append(row)
+
+# Converter a lista de linhas em um DataFrame
+results_df = pd.DataFrame(rows)
+
+# Organizar colunas, mantendo 'n_modes', 'thre_inc', 'd', 'f', 'c' primeiro e os arquivos em pares lda/svm
+ordered_columns = ['n_modes', 'thre_inc', 'd', 'f', 'c'] + sorted([col for col in results_df.columns if col not in ['n_modes', 'thre_inc', 'd', 'f', 'c']])
+results_df = results_df[ordered_columns]
+
+# Exibir a tabela
+print("\nTabela de acurácias do LDA e SVM para múltiplos valores de n_modes e thre_inc")
+print(results_df)
+
+# Salvar o DataFrame em um arquivo CSV
+output_path = "/mnt/d/parameters/leaves_multiple_modes_threinc.csv"
+results_df.to_csv(output_path, index=False)
+print(f"Resultados salvos em: {output_path}")

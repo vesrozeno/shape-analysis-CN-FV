@@ -3,11 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Caminho da pasta base que contém os arquivos CSV
-results_directory = "results/otolith/"
+results_directory = "results/leaves/"
 
 # Parâmetros de filtro específicos
 selected_n_modes = 20
-selected_thre_inc = 35
+selected_thre_inc = 60
 
 # Listar todos os arquivos CSV no diretório de resultados
 csv_files = [f for f in os.listdir(results_directory) if f.endswith('.csv')]
@@ -32,7 +32,9 @@ for csv_file in csv_files:
         f = row['f']
         c = row['c']
         lda_acc = row['lda_acc']
+        lda_std = row['lda_std']
         svm_acc = row['svm_acc']
+        svm_std = row['svm_std']
         
         # Chave baseada na combinação (d, f, c)
         key = (d, f, c)
@@ -43,7 +45,9 @@ for csv_file in csv_files:
         
         # Adiciona as acurácias LDA e SVM para o arquivo CSV atual, usando o nome do arquivo como chave
         results_dict[key][f"{file_name}_lda"] = lda_acc
+        results_dict[key][f"{file_name}_ldastd"] = lda_std
         results_dict[key][f"{file_name}_svm"] = svm_acc
+        results_dict[key][f"{file_name}_svmstd"] = svm_std
 
 # Criar um DataFrame para organizar a tabela
 rows = []
@@ -67,4 +71,4 @@ results_df = results_df[ordered_columns]
 # Exibir a tabela
 print("\nTabela de acurácias do LDA e SVM para n_modes =", selected_n_modes, "e thre_inc =", selected_thre_inc)
 print(results_df)
-results_df.to_csv("/mnt/d/parameters/oto3520_lda_accuracies_table.csv", index=False)
+results_df.to_csv("/mnt/d/parameters/lea_6020.csv", index=False)
