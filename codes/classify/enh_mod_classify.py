@@ -12,8 +12,8 @@ import psutil
 import time
 
 # Variáveis para determinar os nomes de arquivos
-fisher_vectors_pkl = "pkl/cr.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
-results_csv = "results/results_cr.csv"  # Arquivo CSV para salvar os resultados
+fisher_vectors_pkl = "pkl/cs.pkl"  # Arquivo pkl com os Fisher Vectors e rótulos
+results_csv = "results/results_cs.csv"  # Arquivo CSV para salvar os resultados
 n_jobs = 8  # Número de núcleos para usar (-1 usa todos os núcleos disponíveis)
 memory_limit_mb = 4096  # Limite de memória em MB (4GB por padrão)
 cpu_limit_percent = 80  # Limite de uso da CPU em porcentagem
