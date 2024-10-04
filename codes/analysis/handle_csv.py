@@ -6,8 +6,8 @@ dataset = input("Dataset: ")
 legenda = input("Legenda: ")
 
 # Ler o arquivo CSV
-file_path = "results/generic/{}.csv".format(dataset)  # Coloque o caminho correto do seu arquivo CSV
-sns.set(font_scale=1.25)
+file_path = "results/results_{}.csv".format(dataset)  # Coloque o caminho correto do seu arquivo CSV
+sns.set_theme(font_scale=1.25)
 def main():
     sair = 0
     df = pd.read_csv(file_path)
@@ -61,6 +61,8 @@ def combined(df_filtered):
     ax = sns.heatmap(heatmap_data_avg, annot=heatmap_data_text.values, fmt='', cmap="YlGnBu")
     ax.xaxis.set_ticks_position('top')  # Mover os ticks para o topo
     ax.xaxis.set_label_position('top')  # Mover o rótulo para o topo
+    ax.yaxis.set_ticks_position('left')  
+    ax.yaxis.set_label_position('left')  
 
     # Ajustar título e rótulos dos eixos
     plt.xlabel("N Limiares")
@@ -76,6 +78,8 @@ def svm(df_filtered):
     ax = sns.heatmap(heatmap_data * 100, annot=True, fmt=".2f", cmap="YlGnBu")
     ax.xaxis.set_ticks_position('top')  # Mover os ticks para o topo
     ax.xaxis.set_label_position('top')  # Mover o rótulo para o topo
+    ax.yaxis.set_ticks_position('left')  
+    ax.yaxis.set_label_position('left')
 
     plt.xlabel("N Limiares")
     plt.ylabel("K Gaussianas")
@@ -90,6 +94,8 @@ def lda(df_filtered):
     ax = sns.heatmap(heatmap_data * 100, annot=True, fmt=".2f", cmap="YlGnBu")
     ax.xaxis.set_ticks_position('top')  # Mover os ticks para o topo
     ax.xaxis.set_label_position('top')  # Mover o rótulo para o topo
+    ax.yaxis.set_ticks_position('left')  
+    ax.yaxis.set_label_position('left')
 
     plt.xlabel("N Limiares")
     plt.ylabel("K Gaussianas")
